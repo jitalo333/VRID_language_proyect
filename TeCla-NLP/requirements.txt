@@ -1,0 +1,8 @@
+# Sturtural langchain libraries
+langchain-core
+langchain
+# Integration Packages
+langchain-ollama
+langchain-huggingface
+# Huggingface transformers
+transformers
