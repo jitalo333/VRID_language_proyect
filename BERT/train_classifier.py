@@ -27,7 +27,7 @@ def main(path):
         axis=1
     )
     df.to_excel("data_preprocessed.xlsx", index=False)
-    df=df.ilocs[0:10]
+    df=df.iloc[0:10]
 
     # 3) Traducir los textos al inglés
     trans = translator()
