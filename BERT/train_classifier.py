@@ -4,10 +4,7 @@ import pandas as pd
 import os
 from preprocess import preprocess_record
 from translate import translator
-from encoder import embed_texts
-from sklearn.preprocessing import LabelEncoder
-from transformers import AutoTokenizer
-from adapters import AutoAdapterModel
+from encoder import embed_texts, prepare_data
 import torch
 import argparse
 
@@ -30,6 +27,7 @@ def main(path):
         axis=1
     )
     df.to_excel("data_preprocessed.xlsx", index=False)
+    df=df.ilocs[0:10]
 
     # 3) Traducir los textos al inglés
     trans = translator()
@@ -41,28 +39,15 @@ def main(path):
 
 
     # 4) Preparar textos y etiquetas
-    texts = df["text_for_embedding_translated"].tolist()
-    labels = df["Interdisciplinario"]
-    #Eliminar labels = indefinido
-    labels = labels[labels != "INDEFINIDO"]
-    #label encoder
-    le = LabelEncoder()
-    labels = le.fit_transform(labels)
-    labels = pd.Series(labels, index=df[df["Interdisciplinario"] != "INDEFINIDO"].index)
-    texts = [texts[i] for i in labels.index]
+    texts, labels = prepare_data(df)
 
-    # 5) Cargar modelo SPECTER2
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
-    model = AutoAdapterModel.from_pretrained(BASE_MODEL, trust_remote_code=True)
-    model.load_adapter(ADAPTER_NAME, source="hf", set_active=True)
-    model.to(device)
-    model.eval()
-    print("Modelo SPECTER2 cargado correctamente.")
+    # 4) Calcular embeddings
+    # Parámetros modelo
+    BASE_MODEL = "allenai/specter2_base"
+    ADAPTER_NAME = "allenai/specter2"
+    emb_texts = embed_texts(texts, BASE_MODEL, ADAPTER_NAME)
 
-    # 6) Calcular embeddings
-    emb_texts = embed_texts(texts)
-
-    # 7) Guardar embeddings y etiquetas
+    # 6) Guardar embeddings y etiquetas
     df_dataset = pd.DataFrame(columns=["Código VRID", "labels", "embedings"])
     df_dataset["Código VRID"] = df.loc[labels.index, "Código VRID"]
     df_dataset["labels"] = labels
