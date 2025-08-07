@@ -4,6 +4,7 @@ import numpy as np
 from sklearn.preprocessing import LabelEncoder
 from transformers import AutoTokenizer
 from adapters import AutoAdapterModel
+import pandas as pd
 
 def embed_texts(texts, BASE_MODEL, ADAPTER_NAME, batch_size=32, device='cpu'):
     #Parameters
