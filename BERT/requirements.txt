@@ -7,3 +7,5 @@ sklearn-pandas==2.2.0
 transformers==4.51.3
 adapters==1.2.0
 langid==1.1.6
+scikit-optimize==0.10.2
+imbalanced-learn==0.13.0
