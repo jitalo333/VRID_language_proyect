@@ -19,6 +19,36 @@ def _translate_block_Helsinki(text_block, model, tokenizer, device):
     output = model.generate(**inputs)
     return tokenizer.decode(output[0], skip_special_tokens=True)
 
+def _translate_block_nllb(text_block, model, tokenizer, device):
+    """
+    Traduce un bloque de texto del español al inglés usando NLLB-200.
+    """
+    if not text_block.strip():
+        return ""
+
+    # Codificar texto indicando el idioma de origen
+    inputs = tokenizer(
+        text_block,
+        return_tensors="pt",
+        truncation=True,
+        max_length=1024,
+        src_lang="spa_Latn"
+    )
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+
+    # Forzar idioma de destino (inglés latino)
+    forced_bos_token_id = tokenizer.lang_code_to_id["eng_Latn"]
+
+    # Generar traducción
+    output = model.generate(
+        **inputs,
+        forced_bos_token_id=forced_bos_token_id
+    )
+
+    # Decodificar resultado
+    return tokenizer.decode(output[0], skip_special_tokens=True)
+
+
 
 class translator():
     def __init__(self, model, tokenizer, _translate_block_function):
