@@ -23,7 +23,9 @@ RUN echo "Acquire::Check-Valid-Until \"false\";" > /etc/apt/apt.conf.d/99no-chec
         nvidia-cuda-toolkit \
         texlive \
         ca-certificates \
-        apt-utils && \
+        apt-utils \
+        pciutils \
+        lshw && \ 
     apt-get clean && \
     find /var/lib/apt/lists -type f -delete
 
@@ -43,7 +45,7 @@ RUN groupadd -g ${HOST_GID} appuser && \
     echo "appuser ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Make port 8883 available to the world outside this container
-EXPOSE 8889
+EXPOSE 8883
 
 # Default user inside the container remains as root
 USER root

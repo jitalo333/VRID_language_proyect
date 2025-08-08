@@ -21,15 +21,13 @@ First (asumming you have your desired LLM pulled in your host machine) initializ
 ```
 ollama serve 
 ```
-> [!NOTE] I'm thinking in creating a *systemd* file to safetly initialize, but for now ollama serve should do the trick.
-
 
 The run the docker container, you can use the suggested instrucction provided in the repository as:
 ```
 bash core-run-container.sh
 ```
 
-The file will suggest a port available for usage. After running the container from the terminal use the following instruction:
+The file will share the host network. After running the container from the terminal use the following instruction:
 ```
 jupyter notebook --ip 0.0.0.0 --port 8883 --no-browser --allow-root --NotebookApp.token='' --NotebookApp.password=''
 ```
