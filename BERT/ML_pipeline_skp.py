@@ -68,9 +68,9 @@ def safe_log_metric(name, value):
         print(f"⚠️ No se pudo loggear {name}: {e}")
 
 def mlflow_ckeckpoint(results_val, models_dicc, X_test, y_test, experiment_name):
-    # Define el experimento (lo crea si no existe)
-    mlflow.set_experiment(experiment_name)
+    # Define el experimento (lo crea si no existe) 
     mlflow.set_tracking_uri("sqlite:///mlflow.db")
+    mlflow.set_experiment(experiment_name)
 
     for model_name, metrics in results_val.items():
         model = models_dicc[model_name]
@@ -250,8 +250,9 @@ def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, sample_weight_O
 
     return results_val, models_dicc
 
-
+"""
 # Ejemplo de uso
+
 # 1. Generar dataset sintético
 X, y = make_classification(
     n_samples=1000,
@@ -290,3 +291,4 @@ best_model = select_best_model(results_val, models_dicc)
 print("\n🔍 Validación:")
 for model, metrics in results_val.items():
     print(f"{model}: {metrics}")
+"""
