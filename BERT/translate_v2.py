@@ -48,6 +48,14 @@ def _translate_block_bart(text_block, model, tokenizer, device):
     output = model.generate(**inputs, forced_bos_token_id=forced_bos_token_id)
     return tokenizer.decode(output[0], skip_special_tokens=True)
 
+
+def _translate_block_Helsinki(text_block, model, tokenizer, device):
+    inputs = tokenizer(text_block, return_tensors="pt", padding = True)
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+    output = model.generate(**inputs)
+    return tokenizer.decode(output[0], skip_special_tokens=True)
+
+
 class translator():
     def __init__(self, model, tokenizer, _translate_block_function):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
