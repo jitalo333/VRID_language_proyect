@@ -53,6 +53,7 @@ def eval_model(best_model, X_test, y_test):
   }
   return results
 
+#MLflow logging helper function
 def safe_log_metric(name, value):
     try:
         if isinstance(value, (list, tuple, np.ndarray)):
@@ -66,6 +67,36 @@ def safe_log_metric(name, value):
     except Exception as e:
         print(f"⚠️ No se pudo loggear {name}: {e}")
 
+def mlflow_ckeckpoint(results_val, models_dicc, X_test, y_test, experiment_name):
+    # Define el experimento (lo crea si no existe)
+    mlflow.set_experiment(experiment_name)
+    mlflow.set_tracking_uri("sqlite:///mlflow.db")
+
+    for model_name, metrics in results_val.items():
+        model = models_dicc[model_name]
+
+        with mlflow.start_run(run_name=model_name):
+            print(f"Registrando modelo en MLflow: {model_name}")
+
+            # Hiperparámetros
+            try:
+                mlflow.log_params(model.get_params())
+            except:
+                print(f"No se pudieron loggear los hiperparámetros para {model_name}")
+
+            # Métricas de validación
+            for k, v in metrics.items():
+                safe_log_metric(f"val_{k}", v)
+
+            # Métricas de test
+            results_test = eval_model(model, X_test, y_test)
+            for k, v in results_test.items():
+                safe_log_metric(f"test_{k}", v)
+
+            # Guardar modelo
+            mlflow.sklearn.log_model(model, name = "model", input_example=X_test[:5])  
+
+#Pipeline helper functions
 def get_est_params_dict(keys):
     clf_params_dict = {
         'LogisticRegression': {
@@ -177,6 +208,7 @@ def select_best_model(results_val, models_dicc):
             best_model = models_dicc[model]
     return best_model
 
+#Pipeline function to run the entire ML pipeline
 def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, sample_weight_On = None):
 
     # creacion de diccionarios para almacenamiento
