@@ -72,9 +72,19 @@ class translator():
             translated_blocks = []
 
             for idx, para in enumerate(paragraphs):
-                if para.strip():
-                    translated = self._translate_block(para, self.model, self.tokenizer, self.device)
-                    translated_blocks.append(translated)
+                #Count tokens
+                tokenized_para = self.tokenizer(para, return_tensors="pt", truncation=True, max_length=1024)
+                num_tokens = tokenized_para.input_ids.shape[1]
+                if num_tokens > self.tokenizer.model_max_length:
+                    split_paragraphs = para.split('. ')
+                    for sub_para in split_paragraphs:
+                        if sub_para.strip():
+                            translated = self._translate_block(sub_para, self.model, self.tokenizer, self.device)
+                            translated_blocks.append(translated)
+                else:    
+                    if para.strip():
+                        translated = self._translate_block(para, self.model, self.tokenizer, self.device)
+                        translated_blocks.append(translated)
 
             return "\n".join(translated_blocks)
         

@@ -24,21 +24,21 @@ def clean_text(text):
     # Eliminar números tipo "1. Introducción"
     text = re.sub(r'\d+\.\s*[A-Za-zÁÉÍÓÚáéíóúñÑ]+', '', text)
 
-    # Eliminar caracteres no alfanuméricos molestos (excepto puntuación básica)
+    # Eliminar caracteres no alfanuméricos (excepto puntuación básica)
     text = re.sub(r'[^\w\s.,;:()\[\]¿?!¡%\-\\n]', '', text)
 
     # Eliminar múltiples espacios
     text = re.sub(r'\s+', ' ', text)
 
-    # Eliminar instrucciones comunes del formulario (una por una, de forma flexible)
-    frases_a_eliminar = [
+    # Eliminar instrucciones comunes del formulario 
+    delete = [
         r"resumen del proyecto\s*\(1\s*p[aá]gina\)",
         r"debe ser suficientemente informativo y claro.*?proyecto",
         r"problema que se abordar[áa], objetivos, metodolog[ií]a y resultados que se esperan.*?investigaci[oó]n",
         r"debe considerarse que un resumen bien formulado facilita.*?evaluadores"
     ]
-    for frase in frases_a_eliminar:
-        text = re.sub(frase, '', text, flags=re.IGNORECASE | re.DOTALL)
+    for prhase in delete:
+        text = re.sub(prhase, '', text, flags=re.IGNORECASE | re.DOTALL)
 
     return text.strip()
 
@@ -47,6 +47,7 @@ def preprocess_record(title, abstract, keywords, max_keywords=20):
     clean_abs = clean_text(abstract)
     title_clean = clean_text(title)
     kw_list = [k.strip() for k in keywords.split(';') if k.strip()][:max_keywords]
+    kw_list = [clean_text(k) for k in kw_list]
 
     weighted_parts = [
         (title_clean, 1.0),
