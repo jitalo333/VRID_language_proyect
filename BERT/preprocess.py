@@ -37,6 +37,8 @@ def clean_text(text):
         r"problema que se abordar[áa], objetivos, metodolog[ií]a y resultados que se esperan.*?investigaci[oó]n",
         r"debe considerarse que un resumen bien formulado facilita.*?evaluadores"
     ]
+    #agregar: DESCRIBE THE MAIN ISSUES TO BE ADDRESSED: OBJECTIVES, METHODOLOGY AND EXPECTED RESULTS. THE MAXIMUM
+    #LENGTH FOR THIS SECTION IS 1 PAGE (USE LETTER SIZE FORMAT, VERDANA FONT SIZE 10 OR SIMILAR).
     for prhase in delete:
         text = re.sub(prhase, '', text, flags=re.IGNORECASE | re.DOTALL)
 

@@ -9,3 +9,6 @@ adapters==1.2.0
 langid==1.1.6
 scikit-optimize==0.10.2
 imbalanced-learn==0.13.0
+langchain==0.3.27
+#langchain-core==0.3.72
+#langchain-text-splitters==0.3.9
