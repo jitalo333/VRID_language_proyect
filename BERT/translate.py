@@ -11,7 +11,7 @@ class translator():
         self.model = model.to(self.device)
         self.max_input_tokens = max_input_tokens
     
-    def split_text(self, text_to_split):
+    def split_text(self, text_to_split):  
         # Splitter basado en el tokenizador de Helsinki (cuenta tokens reales)
         text_splitter = RecursiveCharacterTextSplitter.from_huggingface_tokenizer(
             tokenizer=self.tokenizer,

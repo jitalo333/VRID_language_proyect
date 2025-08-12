@@ -10,10 +10,11 @@ def clean_text(text):
     text = unicodedata.normalize("NFKC", text)
 
     # Reemplazar saltos de línea reales por el string literal '\n'
-    text = text.replace('\r\n', '\\n').replace('\n', '\\n').replace('\r', '\\n')
+    #text = text.replace('\r\n', '\\n').replace('\n', '\\n').replace('\r', '\\n')
 
     # Reemplazar todos los caracteres de espacio Unicode raros por un espacio común
     text = re.sub(r'[\u00A0\u1680\u180E\u2000-\u200F\u202F\u205F\u3000\uFEFF]', ' ', text)
+    text = re.sub(r'\_x000D_', ' ', text)
 
     # Eliminar referencias tipo [1], [12], etc.
     text = re.sub(r'\[\d+\]', '', text)
@@ -25,25 +26,31 @@ def clean_text(text):
     text = re.sub(r'\d+\.\s*[A-Za-zÁÉÍÓÚáéíóúñÑ]+', '', text)
 
     # Eliminar caracteres no alfanuméricos (excepto puntuación básica)
-    text = re.sub(r'[^\w\s.,;:()\[\]¿?!¡%\-\\n]', '', text)
+    #text = re.sub(r'[^\w\s.,;:()\[\]¿?!¡%\-\\n]', '', text)
 
     # Eliminar múltiples espacios
-    text = re.sub(r'\s+', ' ', text)
+    text = re.sub(r'[ \t]+', ' ', text)
 
     # Eliminar instrucciones comunes del formulario 
     delete = [
-        r"resumen del proyecto\s*\(1\s*p[aá]gina\)",
-        r"debe ser suficientemente informativo y claro.*?proyecto",
-        r"problema que se abordar[áa], objetivos, metodolog[ií]a y resultados que se esperan.*?investigaci[oó]n",
-        r"debe considerarse que un resumen bien formulado facilita.*?evaluadores"
+    r"resumen del proyecto\s*\(1\s*p[aá]gina\)",
+    r"debe ser suficientemente informativo.*?proyecto",
+    r"problema que se abordar[áa],\s*objetivos,\s*metodolog[ií]a y resultados que se esperan[\s\S]*?de evaluadores",
+    r"problema que se abordar[áa],\s*objetivos,\s*metodolog[ií]a y resultados que se esperan[\s\S]*?investigaci[oó]n",
+    r"debe considerarse que un resumen bien formulado facilita.*?evaluadores",
+    r"DESCRIBE THE MAIN ISSUES TO BE ADDRESSED[\s\S]*?EXPECTED RESULTS\.",
+    r"THE MAXIMUM LENGTH FOR THIS SECTION[\s\S]*?SIMILAR\).",
+    r"AVOID INCLUDING IN THIS SECTION INFORMATION[\s\S]*?BACKGROUNDS\."
     ]
     #agregar: DESCRIBE THE MAIN ISSUES TO BE ADDRESSED: OBJECTIVES, METHODOLOGY AND EXPECTED RESULTS. THE MAXIMUM
     #LENGTH FOR THIS SECTION IS 1 PAGE (USE LETTER SIZE FORMAT, VERDANA FONT SIZE 10 OR SIMILAR).
     for prhase in delete:
         text = re.sub(prhase, '', text, flags=re.IGNORECASE | re.DOTALL)
+    
+    #busca cualquier secuencia de 3 o más saltos de línea consecutivos.
+    text = re.sub(r'\n{3,}', '\n', text)
 
-    return text.strip()
-
+    return text.strip().lower()
 
 def preprocess_record(title, abstract, keywords, max_keywords=20):
     clean_abs = clean_text(abstract)
