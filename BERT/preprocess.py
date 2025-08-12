@@ -46,8 +46,7 @@ def clean_text(text):
 
     # Eliminar instrucciones comunes del formulario 
     delete = get_expresions_to_delete()
-    #agregar: DESCRIBE THE MAIN ISSUES TO BE ADDRESSED: OBJECTIVES, METHODOLOGY AND EXPECTED RESULTS. THE MAXIMUM
-    #LENGTH FOR THIS SECTION IS 1 PAGE (USE LETTER SIZE FORMAT, VERDANA FONT SIZE 10 OR SIMILAR).
+    
     for prhase in delete:
         text = re.sub(prhase, '', text, flags=re.IGNORECASE | re.DOTALL)
     
@@ -56,21 +55,6 @@ def clean_text(text):
 
     return text.strip().lower()
 
-def preprocess_record(title, abstract, keywords, max_keywords=20):
-    clean_abs = clean_text(abstract)
-    title_clean = clean_text(title)
-    kw_list = [k.strip() for k in keywords.split(';') if k.strip()][:max_keywords]
-    kw_list = [clean_text(k) for k in kw_list]
-
-    weighted_parts = [
-        (title_clean, 1.0),
-        (f"Keywords: {'; '.join(kw_list)}", 1.0) if kw_list else ("", 0),
-        (f"Abstract: {clean_abs}", 1.0),
-    ]
-
-    parts = [part for part, weight in weighted_parts for _ in range(int(weight))]
-    return ". ".join(filter(None, parts)).lower()
-
 def expand_acronyms(text):
     acronyms = {}
     # Encontrar definiciones de acrónimos tipo "Texto largo (ACR)"
@@ -89,38 +73,6 @@ def expand_acronyms(text):
 
     return text
 
-def preprocess_record(title, abstract, keywords, max_keywords=20):
-    clean_abs = clean_text(abstract)
-    title_clean = clean_text(title)
-    kw_list = [k.strip() for k in keywords.split(';') if k.strip()][:max_keywords]
-    kw_list = [clean_text(k) for k in kw_list]
-
-    weighted_parts = [
-        (title_clean, 1.0),
-        (f"Keywords: {'; '.join(kw_list)}", 1.0) if kw_list else ("", 0),
-        (f"Abstract: {clean_abs}", 1.0),
-    ]
-
-    parts = [part for part, weight in weighted_parts for _ in range(int(weight))]
-    return ". ".join(filter(None, parts)).lower()
-
-def expand_acronyms(text):
-    acronyms = {}
-    # Encontrar definiciones de acrónimos tipo "Texto largo (ACR)"
-    pattern = re.compile(r'\b([A-Z][A-Za-z0-9&.\s]+?)\s*\(\s*([A-Z]{2,})\s*\)')
-    for match in pattern.finditer(text):
-        long_form, short_form = match.groups()
-        acronyms[short_form] = long_form.strip()
-
-    # Eliminar la definición original dejando solo la forma larga
-    text = pattern.sub(lambda m: m.group(1), text)
-
-    # Reemplazar todas las apariciones del acrónimo por la forma larga
-    if acronyms:
-        acronym_pattern = re.compile(r'\b(' + '|'.join(map(re.escape, acronyms.keys())) + r')\b')
-        text = acronym_pattern.sub(lambda m: acronyms[m.group(0)], text)
-
-    return text
 
 
 """
