@@ -67,6 +67,23 @@ def preprocess_record(title, abstract, keywords, max_keywords=20):
     parts = [part for part, weight in weighted_parts for _ in range(int(weight))]
     return ". ".join(filter(None, parts)).lower()
 
+def expand_acronyms(text):
+    acronyms = {}
+    # Encontrar definiciones de acrónimos tipo "Texto largo (ACR)"
+    pattern = re.compile(r'\b([A-Z][A-Za-z0-9&.\s]+?)\s*\(\s*([A-Z]{2,})\s*\)')
+    for match in pattern.finditer(text):
+        long_form, short_form = match.groups()
+        acronyms[short_form] = long_form.strip()
+
+    # Eliminar la definición original dejando solo la forma larga
+    text = pattern.sub(lambda m: m.group(1), text)
+
+    # Reemplazar todas las apariciones del acrónimo por la forma larga
+    if acronyms:
+        acronym_pattern = re.compile(r'\b(' + '|'.join(map(re.escape, acronyms.keys())) + r')\b')
+        text = acronym_pattern.sub(lambda m: acronyms[m.group(0)], text)
+
+    return text
 
 
 """

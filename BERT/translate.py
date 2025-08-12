@@ -2,6 +2,8 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from transformers import MarianMTModel, MarianTokenizer
 import torch
 import langid
+import re
+import pandas as pd
 
 class translator():
     def __init__(self, model, tokenizer, max_input_tokens=512):
@@ -51,6 +53,29 @@ class translator():
             return self.translate_esp_en(text)
         
         return text
+
+
+def final_clean(text):
+    if not isinstance(text, str):
+        return ""
+    # Reemplaza saltos de línea y tabs por un espacio
+    text = re.sub(r'[\r\n\t]+', ' ', text)
+    # Colapsa espacios múltiples
+    text = re.sub(r'\s+', ' ', text)
+    return text.strip()
+
+def gen_text_for_embedding(df, cols):
+    """
+    df   : DataFrame de entrada
+    cols : lista de nombres de columnas a procesar y concatenar
+    """
+    df = df.copy()
+    # Aplica limpieza a cada columna especificada
+    for col in cols:
+        df[col] = df[col].apply(final_clean)
+    # Concatena las columnas limpias en una nueva columna
+    df["text_for_embedding_translated"] = df[cols].agg(" ".join, axis=1)
+    return df
 
 
 """
