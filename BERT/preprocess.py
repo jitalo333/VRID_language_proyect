@@ -2,6 +2,19 @@ import pandas as pd
 import re
 import unicodedata
 
+def get_expresions_to_delete():
+  delete = [
+    r"resumen del proyecto\s*\(1\s*p[aá]gina\)",
+    r"debe ser suficientemente informativo.*?proyecto",
+    r"problema que se abordar[áa],\s*objetivos,\s*metodolog[ií]a y resultados que se esperan[\s\S]*?de evaluadores",
+    r"problema que se abordar[áa],\s*objetivos,\s*metodolog[ií]a y resultados que se esperan[\s\S]*?investigaci[oó]n",
+    r"debe considerarse que un resumen bien formulado facilita.*?evaluadores",
+    r"DESCRIBE THE MAIN ISSUES TO BE ADDRESSED[\s\S]*?EXPECTED RESULTS\.",
+    r"THE MAXIMUM LENGTH FOR THIS SECTION[\s\S]*?SIMILAR\).",
+    r"AVOID INCLUDING IN THIS SECTION INFORMATION[\s\S]*?BACKGROUNDS\."
+    ]
+  return delete
+
 def clean_text(text):
     if not isinstance(text, str):
         return ""
@@ -32,16 +45,7 @@ def clean_text(text):
     text = re.sub(r'[ \t]+', ' ', text)
 
     # Eliminar instrucciones comunes del formulario 
-    delete = [
-    r"resumen del proyecto\s*\(1\s*p[aá]gina\)",
-    r"debe ser suficientemente informativo.*?proyecto",
-    r"problema que se abordar[áa],\s*objetivos,\s*metodolog[ií]a y resultados que se esperan[\s\S]*?de evaluadores",
-    r"problema que se abordar[áa],\s*objetivos,\s*metodolog[ií]a y resultados que se esperan[\s\S]*?investigaci[oó]n",
-    r"debe considerarse que un resumen bien formulado facilita.*?evaluadores",
-    r"DESCRIBE THE MAIN ISSUES TO BE ADDRESSED[\s\S]*?EXPECTED RESULTS\.",
-    r"THE MAXIMUM LENGTH FOR THIS SECTION[\s\S]*?SIMILAR\).",
-    r"AVOID INCLUDING IN THIS SECTION INFORMATION[\s\S]*?BACKGROUNDS\."
-    ]
+    delete = get_expresions_to_delete()
     #agregar: DESCRIBE THE MAIN ISSUES TO BE ADDRESSED: OBJECTIVES, METHODOLOGY AND EXPECTED RESULTS. THE MAXIMUM
     #LENGTH FOR THIS SECTION IS 1 PAGE (USE LETTER SIZE FORMAT, VERDANA FONT SIZE 10 OR SIMILAR).
     for prhase in delete:
@@ -51,6 +55,39 @@ def clean_text(text):
     text = re.sub(r'\n{3,}', '\n', text)
 
     return text.strip().lower()
+
+def preprocess_record(title, abstract, keywords, max_keywords=20):
+    clean_abs = clean_text(abstract)
+    title_clean = clean_text(title)
+    kw_list = [k.strip() for k in keywords.split(';') if k.strip()][:max_keywords]
+    kw_list = [clean_text(k) for k in kw_list]
+
+    weighted_parts = [
+        (title_clean, 1.0),
+        (f"Keywords: {'; '.join(kw_list)}", 1.0) if kw_list else ("", 0),
+        (f"Abstract: {clean_abs}", 1.0),
+    ]
+
+    parts = [part for part, weight in weighted_parts for _ in range(int(weight))]
+    return ". ".join(filter(None, parts)).lower()
+
+def expand_acronyms(text):
+    acronyms = {}
+    # Encontrar definiciones de acrónimos tipo "Texto largo (ACR)"
+    pattern = re.compile(r'\b([A-Z][A-Za-z0-9&.\s]+?)\s*\(\s*([A-Z]{2,})\s*\)')
+    for match in pattern.finditer(text):
+        long_form, short_form = match.groups()
+        acronyms[short_form] = long_form.strip()
+
+    # Eliminar la definición original dejando solo la forma larga
+    text = pattern.sub(lambda m: m.group(1), text)
+
+    # Reemplazar todas las apariciones del acrónimo por la forma larga
+    if acronyms:
+        acronym_pattern = re.compile(r'\b(' + '|'.join(map(re.escape, acronyms.keys())) + r')\b')
+        text = acronym_pattern.sub(lambda m: acronyms[m.group(0)], text)
+
+    return text
 
 def preprocess_record(title, abstract, keywords, max_keywords=20):
     clean_abs = clean_text(abstract)
