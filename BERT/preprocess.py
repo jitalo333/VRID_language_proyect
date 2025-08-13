@@ -3,6 +3,10 @@ import re
 import unicodedata
 
 def get_expresions_to_delete():
+  """
+  Devuelve una lista de patrones regex para eliminar 
+  instrucciones o textos no deseados en el resumen.
+  """
   delete = [
     r"resumen del proyecto\s*\(1\s*p[aá]gina\)",
     r"debe ser suficientemente informativo.*?proyecto",
@@ -22,10 +26,7 @@ def clean_text(text):
     # Normalizar caracteres unicode (acentos, etc.)
     text = unicodedata.normalize("NFKC", text)
 
-    # Reemplazar saltos de línea reales por el string literal '\n'
-    #text = text.replace('\r\n', '\\n').replace('\n', '\\n').replace('\r', '\\n')
-
-    # Reemplazar todos los caracteres de espacio Unicode raros por un espacio común
+    # Estandarización de carácteres de espacio
     text = re.sub(r'[\u00A0\u1680\u180E\u2000-\u200F\u202F\u205F\u3000\uFEFF]', ' ', text)
     text = re.sub(r'\_x000D_', ' ', text)
 
@@ -44,17 +45,17 @@ def clean_text(text):
     # Eliminar múltiples espacios
     text = re.sub(r'[ \t]+', ' ', text)
 
-    # Eliminar instrucciones comunes del formulario 
+    # Eliminar instrucciones comunes del formulario
     delete = get_expresions_to_delete()
-    
     for prhase in delete:
         text = re.sub(prhase, '', text, flags=re.IGNORECASE | re.DOTALL)
-    
+
     #busca cualquier secuencia de 3 o más saltos de línea consecutivos.
     text = re.sub(r'\n{3,}', '\n', text)
 
     return text.strip().lower()
 
+#Esta función aún no funciona completamente bien, así que no está en el Pipeline
 def expand_acronyms(text):
     acronyms = {}
     # Encontrar definiciones de acrónimos tipo "Texto largo (ACR)"

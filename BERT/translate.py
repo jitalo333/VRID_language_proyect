@@ -6,26 +6,51 @@ import re
 import pandas as pd
 
 class translator():
+    """
+    Clase para traducir texto del español al inglés utilizando un modelo y tokenizer de Hugging Face.
+    Incluye detección de idioma, segmentación en fragmentos y unión de la traducción final.
+    """
     def __init__(self, model, tokenizer, max_input_tokens=512):
+        """
+        Inicializa el traductor cargando el modelo y tokenizer en GPU si está disponible.
+        Args:
+            model: Modelo de traducción.
+            tokenizer: Tokenizer asociado al modelo.
+            max_input_tokens (int): Máximo de tokens por fragmento.
+        """
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         # Cargar modelo y tokenizer
         self.tokenizer = tokenizer
         self.model = model.to(self.device)
         self.max_input_tokens = max_input_tokens
-    
-    def split_text(self, text_to_split):  
+
+    def split_text(self, text_to_split):
+        """
+        Divide un texto en fragmentos manejables según el límite de tokens del modelo. 
+        Args:
+            text_to_split (str): Texto original a dividir.
+        Returns:
+            list: Lista de fragmentos como objetos Document.
+        """
         # Splitter basado en el tokenizador de Helsinki (cuenta tokens reales)
         text_splitter = RecursiveCharacterTextSplitter.from_huggingface_tokenizer(
             tokenizer=self.tokenizer,
-            chunk_size=self.max_input_tokens,       # el encoder de Marian suele aceptar hasta ~512 tokens
+            chunk_size=self.max_input_tokens,       
             chunk_overlap=0,
-            separators=["\n\n", ".", ",", " "]
+            separators=["\n\n", ".", ",", " "] #Jerarquía de separadores
         )
 
         texts = text_splitter.create_documents([text_to_split])
         return texts
-        
+
     def translate_esp_en(self, text_to_split):
+        """
+        Traduce un texto del español al inglés dividiéndolo en fragmentos y recomponiendo el resultado.
+        Args:
+            text_to_split (str): Texto en español. 
+        Returns:
+            str: Texto traducido al inglés.
+        """
         #Split text
         texts = self.split_text(text_to_split)
         # Translate
@@ -48,14 +73,28 @@ class translator():
 
     # Detección y traducción
     def detect_and_translate(self, text):
+        """
+        Detecta el idioma del texto y lo traduce si está en español.
+        Args:
+            text (str): Texto de entrada. 
+        Returns:
+            str: Texto traducido o el mismo texto si no es español.
+        """
         lang, _ = langid.classify(text)
         if lang == 'es':
             return self.translate_esp_en(text)
-        
+
         return text
 
 
 def final_clean(text):
+    """
+    Limpia un texto eliminando saltos de línea, tabs y espacios múltiples. 
+    Args:
+        text (str): Texto de entrada.
+    Returns:
+        str: Texto limpio y sin espacios innecesarios.
+    """
     if not isinstance(text, str):
         return ""
     # Reemplaza saltos de línea y tabs por un espacio
