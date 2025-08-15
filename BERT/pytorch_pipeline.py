@@ -79,7 +79,7 @@ def MinMax_scaler_channel(X_train, X_test):
     return scale(X_train), scale(X_test)
 
 class Pytorch_Pipeline():
-      def __init__(self, model_class, sample_weights_loss=None, max_epochs = 200):
+    def __init__(self, model_class, sample_weights_loss=None, max_epochs = 200):
         self.model_class = model_class
         self.model = None
         self.params = None
@@ -91,7 +91,7 @@ class Pytorch_Pipeline():
         self.max_epochs = max_epochs
         self.scaler = None
 
-      def partial_fit(self, loader):
+    def partial_fit(self, loader):
         self.model.to(self.device)
         self.model.train()
 
@@ -104,74 +104,76 @@ class Pytorch_Pipeline():
 
         return self
 
-      def predict(self, X):
-          self.model.eval()
-          if self.scaler is not None:
+    def predict(self, X):
+        self.model.eval()
+        if self.scaler is not None:
             X = self.scaler.transform(X)
-          X_tensor = torch.tensor(X, dtype=torch.float32)
-          dataset = TensorDataset(X_tensor)
-          loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+        X_tensor = torch.tensor(X, dtype=torch.float32)
+        dataset = TensorDataset(X_tensor)
+        loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
-          preds = []
-          with torch.no_grad():
-              for xb in loader:
-                  xb = xb[0].to(self.device)
-                  pred = self.model(xb)
-                  preds.append(pred.cpu().numpy())
-          preds = np.concatenate(preds, axis=0)
-          return np.argmax(preds, axis=1)
+        preds = []
+        with torch.no_grad():
+            for xb in loader:
+                xb = xb[0].to(self.device)
+                pred = self.model(xb)
+                preds.append(pred.cpu().numpy())
+        preds = np.concatenate(preds, axis=0)
+        return np.argmax(preds, axis=1)
 
-      def predict_and_evaluate(self, loader):
-          self.model.eval()
-          val_loss, n_samples = 0.0, 0
-          all_preds, all_targets = [], []
-          with torch.no_grad():
-              for xb, yb in loader:
-                  xb, yb = xb.to(self.device), yb.to(self.device)
-                  output = self.model(xb)
-                  loss = self.criterion(output, yb)
-                  val_loss += self.criterion(output, yb).item() * xb.size(0)
-                  n_samples += xb.size(0)
+    
 
-                  pred = output.argmax(dim=1)
-                  all_preds.append(pred.cpu())
-                  all_targets.append(yb.cpu())
+    def predict_and_evaluate(self, loader):
+        self.model.eval()
+        val_loss, n_samples = 0.0, 0
+        all_preds, all_targets = [], []
+        with torch.no_grad():
+            for xb, yb in loader:
+                xb, yb = xb.to(self.device), yb.to(self.device)
+                output = self.model(xb)
+                loss = self.criterion(output, yb)
+                val_loss += self.criterion(output, yb).item() * xb.size(0)
+                n_samples += xb.size(0)
 
-          avg_val_loss = val_loss / n_samples
-          y_true = torch.cat(all_targets).numpy()
-          y_pred = torch.cat(all_preds).numpy()
-          f1 = f1_score(y_true, y_pred, average='weighted')  # weighted F1
+                pred = output.argmax(dim=1)
+                all_preds.append(pred.cpu())
+                all_targets.append(yb.cpu())
 
-          return avg_val_loss, f1, y_true, y_pred
+        avg_val_loss = val_loss / n_samples
+        y_true = torch.cat(all_targets).numpy()
+        y_pred = torch.cat(all_preds).numpy()
+        f1 = f1_score(y_true, y_pred, average='weighted')  # weighted F1
 
-      def set_params(self, **params):
-          self.params = params
+        return avg_val_loss, f1, y_true, y_pred
 
-          # Obtener los parámetros esperados por el constructor de model_class
-          signature = inspect.signature(self.model_class.__init__)
-          valid_keys = set(signature.parameters.keys()) - {'self'}
+    def set_params(self, **params):
+        self.params = params
 
-          # Filtrar los params para incluir solo los esperados
-          filtered_params = {k: v for k, v in params.items() if k in valid_keys}
+        # Obtener los parámetros esperados por el constructor de model_class
+        signature = inspect.signature(self.model_class.__init__)
+        valid_keys = set(signature.parameters.keys()) - {'self'}
 
-          self.model = self.model_class(**filtered_params)
-          self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params['lr'])
-          self.batch_size = self.params['batch_size']
+        # Filtrar los params para incluir solo los esperados
+        filtered_params = {k: v for k, v in params.items() if k in valid_keys}
 
-      def set_criterion(self, y):
-          # ----------- Criterion -----------
-          if self.sample_weights_loss is not None:
-              class_weights = get_sample_weights_loss(y)
-              class_weights = torch.tensor(class_weights, dtype=torch.float32).to(self.device)
-              self.criterion = nn.CrossEntropyLoss(weight=class_weights)
-          else:
-              self.criterion = nn.CrossEntropyLoss()
+        self.model = self.model_class(**filtered_params)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.params['lr'])
+        self.batch_size = self.params['batch_size']
 
-          return self
+    def set_criterion(self, y):
+        # ----------- Criterion -----------
+        if self.sample_weights_loss is not None:
+            class_weights = get_sample_weights_loss(y)
+            class_weights = torch.tensor(class_weights, dtype=torch.float32).to(self.device)
+            self.criterion = nn.CrossEntropyLoss(weight=class_weights)
+        else:
+            self.criterion = nn.CrossEntropyLoss()
 
-      def set_scaler_transform(self, scaler, X_train, X_test, dtype = 'Tabular'):
+        return self
+
+    def set_scaler_transform(self, scaler, X_train, X_test, dtype = 'Tabular'):
           # ----------- Escalado de datos -----------
-          if dtype == 'Tabular':
+        if dtype == 'Tabular':
             if scaler == 'standard':
                 self.scaler = StandardScaler()
                 X_train = self.scaler.fit_transform(X_train)
@@ -183,17 +185,17 @@ class Pytorch_Pipeline():
             else: pass
 
 
-          elif dtype == 'MultiDim_TimeSeries':
+        elif dtype == 'MultiDim_TimeSeries':
             if scaler == 'standard':
                 X_train, X_test = Standard_scaler_channel(X_train, X_test)
             elif scaler == 'minmax':
                 X_train, X_test = MinMax_scaler_channel(X_train, X_test)
             else: pass
 
-          return X_train, X_test
+        return X_train, X_test
 
 
-      def set_scaler(self, scaler):
+    def set_scaler(self, scaler):
           # ----------- Escalado de datos -----------
           if scaler == 'standard':
               self.scaler = StandardScaler()
@@ -204,7 +206,7 @@ class Pytorch_Pipeline():
           else:
               return None
 
-      def fit_early_stopping(self, X_train, y_train, X_test, y_test, scaler = 'standard'):
+    def fit_early_stopping(self, X_train, y_train, X_test, y_test, scaler = 'standard'):
 
           X_train, X_test = self.set_scaler_transform(scaler, X_train, X_test)
 
