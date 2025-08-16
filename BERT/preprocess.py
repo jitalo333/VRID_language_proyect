@@ -2,22 +2,76 @@ import pandas as pd
 import re
 import unicodedata
 
-def get_expresions_to_delete():
-  """
-  Devuelve una lista de patrones regex para eliminar 
-  instrucciones o textos no deseados en el resumen.
-  """
-  delete = [
-    r"resumen del proyecto\s*\(1\s*p[aá]gina\)",
-    r"debe ser suficientemente informativo.*?proyecto",
-    r"problema que se abordar[áa],\s*objetivos,\s*metodolog[ií]a y resultados que se esperan[\s\S]*?de evaluadores",
-    r"problema que se abordar[áa],\s*objetivos,\s*metodolog[ií]a y resultados que se esperan[\s\S]*?investigaci[oó]n",
-    r"debe considerarse que un resumen bien formulado facilita.*?evaluadores",
-    r"DESCRIBE THE MAIN ISSUES TO BE ADDRESSED[\s\S]*?EXPECTED RESULTS\.",
-    r"THE MAXIMUM LENGTH FOR THIS SECTION[\s\S]*?SIMILAR\).",
-    r"AVOID INCLUDING IN THIS SECTION INFORMATION[\s\S]*?BACKGROUNDS\."
+
+def get_expressions_to_delete():
+    """
+    Devuelve una lista de patrones *precompilados* para eliminar
+    instrucciones o textos no deseados en el resumen.
+    Los patrones están diseñados para tolerar saltos de línea y variaciones menores.
+    """
+    pats = [
+        # "resumen del proyecto (1 página)"
+        r"""
+        resumen\s+del\s+proyecto
+        \s*\(\s*1\s*p[aá]gina\s*\)
+        """,
+
+        #ii. objetivo general y objetivos específicos (1página) 
+        r"""
+        (?:ii\.\s*)?                               # "ii." opcional
+        objetivo\s+general
+        [\s\S]{0,100}?                             # margen de texto flexible
+        objetivos?\s+espec[ií]ficos?               # específicos (con o sin tilde)
+        (?:                                        # inicio del grupo opcional
+            \s*\(
+                (?:max\.\s*)?                      # "max." opcional
+                \d+\s*p[aá]gina[s]?                # "1 página", "1página", plural
+            \)
+        )?                                         # <-- TODO el bloque entre paréntesis es opcional
+        """,
+
+        # "debe ser suficientemente informativo ... proyecto:"
+        r"""
+        debe\s+ser\s+suficientemente\s+informativo
+        [\s\S]{0,800}?             # tolera contenido intermedio, incl. saltos de línea
+        proyecto:
+        """,
+
+        # “problema que se abordará, objetivos, metodología y resultados que se esperan ... (de evaluadores | de la investigación)”
+        r"""
+        problema\s+que\s+se\s+abordar[áa]
+        (?:[\s\S]{0,400}?objetivos)?            # <- OPCIONAL
+        [\s\S]{0,400}?metodolog[ií]a
+        [\s\S]{0,400}?resultados\s+que\s+se\s+esperan
+        [\s\S]{0,400}?
+        (?:de\s+evaluadores|de\s+la?\s+investigaci[oó]n)
+        (?:\s*,?\s*etc\.)?                      # <- opcional “etc.”
+        """,
+        
+        # “debe considerarse que un resumen bien formulado facilita ... evaluadores”
+        r"""
+        debe\s+considerarse\s+que\s+un\s+resumen\s+bien\s+formulado\s+facilita
+        [\s\S]{0,400}?evaluadores
+        """,
+
+        # Bloques en inglés (tal como los tenías, pero robustecidos)
+        r"""
+        DESCRIBE\s+THE\s+MAIN\s+ISSUES\s+TO\s+BE\s+ADDRESSED
+        [\s\S]{0,1000}?EXPECTED\s+RESULTS\.
+        """,
+        r"""
+        THE\s+MAXIMUM\s+LENGTH\s+FOR\s+THIS\s+SECTION
+        [\s\S]{0,1000}?SIMILAR\)\.
+        """,
+        r"""
+        AVOID\s+INCLUDING\s+IN\s+THIS\s+SECTION\s+INFORMATION
+        [\s\S]{0,1000}?BACKGROUNDS\.
+        """,
     ]
-  return delete
+
+    flags = re.IGNORECASE | re.DOTALL | re.VERBOSE
+    return [re.compile(p, flags=flags) for p in pats]
+
 
 def clean_text(text):
     if not isinstance(text, str):
@@ -29,6 +83,10 @@ def clean_text(text):
     # Estandarización de carácteres de espacio
     text = re.sub(r'[\u00A0\u1680\u180E\u2000-\u200F\u202F\u205F\u3000\uFEFF]', ' ', text)
     text = re.sub(r'\_x000D_', ' ', text)
+
+    # Eliminar instrucciones comunes del formulario
+    for pattern in get_expressions_to_delete():
+        text = pattern.sub(" ", text)
 
     # Eliminar referencias tipo [1], [12], etc.
     text = re.sub(r'\[\d+\]', '', text)
@@ -45,15 +103,14 @@ def clean_text(text):
     # Eliminar múltiples espacios
     text = re.sub(r'[ \t]+', ' ', text)
 
-    # Eliminar instrucciones comunes del formulario
-    delete = get_expresions_to_delete()
-    for prhase in delete:
-        text = re.sub(prhase, '', text, flags=re.IGNORECASE | re.DOTALL)
-
     #busca cualquier secuencia de 3 o más saltos de línea consecutivos.
     text = re.sub(r'\n{3,}', '\n', text)
+    
+    #Expandir acronimos
+    #text = expand_acronyms(text)
 
     return text.strip().lower()
+
 
 #Esta función aún no funciona completamente bien, así que no está en el Pipeline
 def expand_acronyms(text):
@@ -73,8 +130,6 @@ def expand_acronyms(text):
         text = acronym_pattern.sub(lambda m: acronyms[m.group(0)], text)
 
     return text
-
-
 
 """
 ################################ Ejemplo de uso ####################################
