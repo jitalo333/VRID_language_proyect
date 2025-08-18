@@ -7,10 +7,42 @@ import pandas as pd
 from tqdm import tqdm
 import torch
 
+def gen_ids(num, list):
+    """
+    Repite el ID tantas veces como elementos haya en la lista.
+    Args:
+        num (int): ID a repetir.
+        list (list): Lista cuyos elementos determinan cuántas veces repetir el ID.
+    Returns:
+        list: Lista con el ID repetido.
+    """
+    return [num] * len(list)
+    
+def detect_language(texts):
+    """
+    Detecta si los textos están en español.
+    Args:
+        texts (list): Lista de textos a evaluar.
+    Returns:
+        list: Lista de booleanos indicando si cada texto está en español.
+    """
+    langs =[]
+    for text in texts:
+        lang, _ = langid.classify(text)
+        if lang == 'es':
+            langs.append(True)
+        else:
+            langs.append(False)
+    return langs
+
+
 class translator():
     """
     Clase para traducir texto del español al inglés utilizando un modelo y tokenizer de Hugging Face.
     Incluye detección de idioma, segmentación en fragmentos y unión de la traducción final.
+    La traducción puede realizarse de forma individual, utilizando detect_and_translate(), 
+    o bien procesar una lista de textos en paralelo mediante translate_parallel().
+
     """
     def __init__(self, model, tokenizer, max_input_tokens=512):
         """
@@ -26,9 +58,6 @@ class translator():
         self.tokenizer = tokenizer
         self.model = model.to(self.device)
         self.max_input_tokens = max_input_tokens
-        # Verificar avance del proceso
-        self.count = 0
-
 
     def split_text(self, text_to_split):
         """
@@ -48,7 +77,6 @@ class translator():
 
         texts = text_splitter.create_documents([text_to_split])
         return texts
-
 
     def translate_esp_en(self, text_to_split, batch_size=16):
         texts = self.split_text(text_to_split)
@@ -71,8 +99,7 @@ class translator():
 
         return "\n\n".join(translated_chunks)
 
-
-    # Detección y traducción
+    # Detección y traducción de texto. 
     def detect_and_translate(self, text):
         """
         Detecta el idioma del texto y lo traduce si está en español.
@@ -85,17 +112,95 @@ class translator():
         if lang == 'es':
             return self.translate_esp_en(text)
         
-        if self.count % 100 == 0:
-            print(f"Procesados {self.count} textos.")
-        self.count += 1
-
         return text
 
-    def reset_count(self):
+    def translate_parallel(self, texts, batch_size=16):
         """
-        Resetea el contador de textos procesados.
+        Traduce en paralelo una lista de textos mezclados en español e inglés.
+
+        Inputs:
+            texts (list[str]): Lista de textos a traducir.
+
+        Outputs:
+            list[str]: Lista de textos donde los que estaban en español fueron traducidos
+                    y los que estaban en otros idiomas se mantienen igual.
+
+        Proceso:
+            1. Detecta qué textos están en español.
+            2. Divide los textos largos en fragmentos (para no superar límite de tokens).
+            3. Traduce por lotes con el modelo de traducción.
+            4. Reconstruye los textos traducidos completos.
+            5. Une los textos traducidos con los originales en otros idiomas, manteniendo orden.
         """
-        self.count = 0
+
+        # Crear lista de IDs únicos para no perder el orden
+        ids = list(range(len(texts)))
+
+        # Detectar idioma de cada texto (True = español, False = otro idioma)
+        langs = detect_language(texts)
+   
+
+        # Construir dataframe base
+        df = pd.DataFrame({'id': ids, 'is_spanish': langs, 'text': texts})
+
+        # Separar en textos español e inglés
+        df_spanish = df[df['is_spanish']].copy()
+        df_other   = df[~df['is_spanish']].copy()
+
+        # Dividir textos españoles en fragmentos manejables
+        df_spanish['text'] = df_spanish['text'].apply(self.split_text)
+
+        # Generar lista expandida de (id, fragmento)
+        id_loc, texts_for_batch = [], []
+        for _, row in df_spanish.iterrows():
+            id_loc.extend(gen_ids(row['id'], row['text']))   # genera ID por fragmento
+            texts_for_batch.extend(row['text'])              # agrega fragmentos
+
+        # === Traducción por lotes ===
+        translated_chunks = []
+        
+        for i in tqdm(range(0, len(texts_for_batch), batch_size), desc="Traduciendo", unit="batch"):
+            batch = [t.page_content for t in texts_for_batch[i:i+batch_size]]
+            
+            # Tokenizar batch
+            encoded = self.tokenizer(
+                batch,
+                return_tensors="pt",
+                padding=True,
+                truncation=True,
+                max_length=512
+            ).to(self.device)
+
+            # Generación de traducción
+            with torch.inference_mode():
+                out_ids = self.model.generate(
+                    **encoded,
+                    num_beams=4,
+                    max_new_tokens=self.max_input_tokens,
+                    no_repeat_ngram_size=3,
+                    early_stopping=True
+                )
+            # Decodificar traducciones y acumular
+            translated_batch = self.tokenizer.batch_decode(out_ids, skip_special_tokens=True)
+            translated_chunks.extend(translated_batch)
+
+        # === Reconstruir textos ===
+        df_translated = pd.DataFrame({'id': id_loc, 'text': translated_chunks})
+        df_translated = (
+            df_translated.groupby('id')['text']
+            .apply(lambda x: ' '.join(x))      # unir fragmentos del mismo texto
+            .reset_index()
+        )
+
+        # Unir con textos originales en otros idiomas y ordenar
+        df_final = pd.concat(
+            [df_translated, df_other.drop(columns=['is_spanish'])],
+            ignore_index=True
+        ).sort_values(by="id").reset_index(drop=True)
+
+        return df_final["text"].to_list()
+    
+
 
 def final_clean(text):
     """
