@@ -12,7 +12,7 @@ def get_expressions_to_delete():
     pats = [
         # "resumen del proyecto (1 página)"
         r"""
-        resumen\s+del\s+proyecto
+        \.?\s*resumen\s+del\s+proyecto
         \s*\(\s*1\s*p[aá]gina\s*\)
         """,
 
