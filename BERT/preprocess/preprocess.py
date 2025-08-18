@@ -11,10 +11,13 @@ def get_expressions_to_delete():
     """
     pats = [
         # "resumen del proyecto (1 página)"
-        r"""
-        \.?\s*resumen\s+del\s+proyecto
-        \s*\(\s*1\s*p[aá]gina\s*\)
+         r"""
+        ^[\s\u00A0]*                          # espacios normales o NBSP al inicio de línea
+        (?:[IVXLCDM]+\.\s*|\.\s*)?            # opcional: 'IV.' / 'V.' ... o solo '.'
+        resumen\s+del\s+proyecto              # texto base
+        (?:\s*\(\s*1\s*p[aá]gina\s*\))?       # opcional: '(1 página)' o '(1PÁGINA)'
         """,
+
 
         #ii. objetivo general y objetivos específicos (1página) 
         r"""
@@ -29,6 +32,7 @@ def get_expressions_to_delete():
             \)
         )?                                         # <-- TODO el bloque entre paréntesis es opcional
         """,
+        
 
         # "debe ser suficientemente informativo ... proyecto:"
         r"""
@@ -130,25 +134,3 @@ def expand_acronyms(text):
         text = acronym_pattern.sub(lambda m: acronyms[m.group(0)], text)
 
     return text
-
-"""
-################################ Ejemplo de uso ####################################
-import os
-import pandas as pd
-from preprocess import preprocess_record
-
-# 1) Cargar datos
-path = "/content/drive/MyDrive/VRID_NLP/code/VRID_proyect/"
-filePATH = os.path.join(path, "data_concatenada.xlsx")
-df = pd.read_excel(filePATH,
-                   usecols=["Código VRID", "Título", "Resumen", "Keywords", "Interdisciplinario", "Transdisciplinario"]) \
-       .fillna("")
-cols = ["Título", "Resumen", "Keywords"]
-df[cols] = df[cols].applymap(lambda x: "" if str(x).strip().upper() == "DESCONOCIDO" else str(x).strip())
-df["text_for_embedding"] = df.apply(
-    lambda r: preprocess_record(r["Título"], r["Resumen"], r["Keywords"]),
-    axis=1
-)
-df.to_excel("peso1.xlsx")
-
-"""
