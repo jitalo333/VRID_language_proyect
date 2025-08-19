@@ -74,9 +74,9 @@ def get_expressions_to_delete():
         ####### Textos únicos identificados (no se repiten en varias casillas): 
         # Caso 1: versión extendida enviada a fondecyt 2022
         r"""(?ixs)
-        una\s+versi[oó]n\s+extendida.*?
+        \(\s*una\s+versi[oó]n\s+extendida.*?
         fondecyt\s+de\s+iniciaci[oó]n\s+2022.*?
-        idioma\s+ingl[eé]s
+        idioma\s+ingl[eé]s.\s*\)
         """,
 
         # Caso 2: señalar el proyecto, objetivos y diferencia sg1/sg2
