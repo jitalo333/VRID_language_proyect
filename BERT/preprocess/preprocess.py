@@ -91,6 +91,86 @@ def get_expressions_to_delete():
     flags = re.IGNORECASE | re.DOTALL | re.VERBOSE
     return [re.compile(p, flags=flags) for p in pats]
 
+def _short_pat(pat: str, n: int = 50) -> str:
+    pat = pat.strip()
+    return (pat[:n] + "...") if len(pat) > n else pat
+
+def check_deleted_expressions(texts, return_long: bool = False):
+    """
+    Detecta (sin eliminar) qué fragmentos coincidirían con los patrones de
+    get_expressions_to_delete() en cada texto.
+
+    Parámetros
+    ----------
+    texts : iterable[str]
+        Lista/iterable de textos.
+    return_long : bool, opcional (default=False)
+        Si True, además del pivote ancho devuelve un DataFrame largo con una fila por match.
+
+    Devuelve
+    --------
+    df_wide : pd.DataFrame
+        Filas = text_idx, Columnas = patrón (string acortado), Valores = coincidencias concatenadas.
+    df_long (opcional) : pd.DataFrame
+        Columnas: text_idx, pattern_id, pattern, start, end, match.
+    """
+    # Preparar patrones
+    patterns = get_expressions_to_delete()
+    pat_meta = [
+        {"id": f"P{i+1}", "obj": p, "name": _short_pat(p.pattern)}
+        for i, p in enumerate(patterns)
+    ]
+
+    # Recolectar matches
+    records = []
+    for i, raw_text in enumerate(texts):
+        # Normalización básica (sin eliminar nada por regex)
+        text = raw_text if isinstance(raw_text, str) else ""
+        text = unicodedata.normalize("NFKC", text)
+        text = re.sub(r'[\u00A0\u1680\u180E\u2000-\u200F\u202F\u205F\u3000\uFEFF]', ' ', text)
+        text = re.sub(r'\_x000D_', ' ', text)
+
+        for meta in pat_meta:
+            pat = meta["obj"]
+            for m in pat.finditer(text):
+                match_txt = m.group(0)
+                records.append({
+                    "text_idx": i,
+                    "pattern_id": meta["id"],
+                    "pattern": meta["name"],
+                    "start": m.start(),
+                    "end": m.end(),
+                    "match": match_txt.strip()
+                })
+
+    # Si no hubo coincidencias, devolver DataFrame vacío consistente
+    if not records:
+        df_wide = pd.DataFrame(columns=["text_idx"] + [m["name"] for m in pat_meta])
+        df_wide.set_index("text_idx", inplace=True)
+        return (df_wide, pd.DataFrame(columns=["text_idx", "pattern_id", "pattern", "start", "end", "match"])) if return_long else df_wide
+
+    # DF largo
+    df_long = pd.DataFrame(records)
+
+    # Agregar múltiples matches por (text_idx, pattern) y concatenar sin duplicados preservando orden
+    agg = (
+        df_long.groupby(["text_idx", "pattern"], as_index=False)["match"]
+        .apply(lambda s: " | ".join(dict.fromkeys([x for x in s if x])))
+    )
+
+    # Pivot a formato ancho
+    df_wide = agg.pivot(index="text_idx", columns="pattern", values="match").fillna("")
+
+    # Asegurar columnas para todos los patrones (aunque queden vacías)
+    all_cols = [m["name"] for m in pat_meta]
+    for c in all_cols:
+        if c not in df_wide.columns:
+            df_wide[c] = ""
+    df_wide = df_wide.reindex(columns=all_cols).sort_index()
+
+    if return_long:
+        return df_wide, df_long.sort_values(["text_idx", "start"])
+    return df_wide
 
 def clean_text(text):
     if not isinstance(text, str):
@@ -119,7 +199,7 @@ def clean_text(text):
     # Eliminar caracteres no alfanuméricos (excepto puntuación básica)
     #text = re.sub(r'[^\w\s.,;:()\[\]¿?!¡%\-\\n]', '', text)
 
-    # Eliminar puntiación que se encuentre al principio de un párrafo
+    # Eliminar puntuación que se encuentre al principio de un párrafo
     text = re.sub(r'^[\s:.,]+', '', text)
 
     # Eliminar múltiples espacios
@@ -132,7 +212,6 @@ def clean_text(text):
     #text = expand_acronyms(text)
 
     return text.strip().lower()
-
 
 #Esta función aún no funciona completamente bien, así que no está en el Pipeline
 def expand_acronyms(text):
