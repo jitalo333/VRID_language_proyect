@@ -71,6 +71,21 @@ def get_expressions_to_delete():
         AVOID\s+INCLUDING\s+IN\s+THIS\s+SECTION\s+INFORMATION
         [\s\S]{0,1000}?BACKGROUNDS\.
         """,
+        ####### Textos únicos identificados (no se repiten en varias casillas): 
+        # Caso 1: versión extendida enviada a fondecyt 2022
+        r"""(?ixs)
+        una\s+versi[oó]n\s+extendida.*?
+        fondecyt\s+de\s+iniciaci[oó]n\s+2022.*?
+        idioma\s+ingl[eé]s
+        """,
+
+        # Caso 2: señalar el proyecto, objetivos y diferencia sg1/sg2
+        r"""(?ixs)
+        se[nñ]alar\s+el\s+del\s+proyecto.*?
+        objetivos.*?
+        fondecyt.*?
+        sg1.*?sg2
+        """
     ]
 
     flags = re.IGNORECASE | re.DOTALL | re.VERBOSE
@@ -103,6 +118,9 @@ def clean_text(text):
 
     # Eliminar caracteres no alfanuméricos (excepto puntuación básica)
     #text = re.sub(r'[^\w\s.,;:()\[\]¿?!¡%\-\\n]', '', text)
+
+    # Eliminar puntiación que se encuentre al principio de un párrafo
+    text = re.sub(r'^[\s:.,]+', '', text)
 
     # Eliminar múltiples espacios
     text = re.sub(r'[ \t]+', ' ', text)
