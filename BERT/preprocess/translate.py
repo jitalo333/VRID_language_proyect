@@ -200,17 +200,26 @@ class translator():
 
         return df_final["text"].to_list()
     
-
-
-def gen_text_for_embedding(df, cols):
+def gen_text_for_embedding(df, cols, element_names=None, sep=" "):
     """
-    df   : DataFrame de entrada
-    cols : lista de nombres de columnas a procesar y concatenar
+    df            : DataFrame de entrada
+    cols          : lista de nombres de columnas a procesar y concatenar
+    element_names : lista de etiquetas para cada columna (misma longitud que cols)
+    sep           : separador entre pares clave-valor (default = " ")
     """
-    # Concatena las columnas limpias en una nueva columna
-    df["text_for_embedding_translated"] = df[cols].agg(" ".join, axis=1)
+    if element_names is None:
+        df["text_for_embedding_translated"] = df[cols].agg(sep.join, axis=1)
+    else:
+        if len(element_names) != len(cols):
+            raise ValueError("element_names debe tener la misma longitud que cols")
+
+        df["text_for_embedding_translated"] = df[cols].agg(
+            lambda row: sep.join(
+                f"{name}: {row[col]}" for col, name in zip(cols, element_names)
+            ),
+            axis=1
+        )
     return df
-
 
 def final_clean(text):
     """

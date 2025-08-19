@@ -200,7 +200,7 @@ def clean_text(text):
     #text = re.sub(r'[^\w\s.,;:()\[\]¿?!¡%\-\\n]', '', text)
 
     # Eliminar puntuación que se encuentre al principio de un párrafo
-    text = re.sub(r'^[\s:.,]+', '', text)
+    text = re.sub(r'^[\s:.,()]+', '', text)
 
     # Eliminar múltiples espacios
     text = re.sub(r'[ \t]+', ' ', text)
