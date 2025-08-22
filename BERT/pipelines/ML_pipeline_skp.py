@@ -163,7 +163,6 @@ def mlflow_ckeckpoint(exp_info, results_val, models_dicc, extra_parms, X_test, y
             # Guardar modelo
             mlflow.sklearn.log_model(model, name = "model", input_example=X_test[:5])
 
-
 #Pipeline helper functions
 def get_est_params_dict(keys):
     clf_params_dict = {
