@@ -35,6 +35,8 @@ from skopt.space import Real, Categorical, Integer
 import numpy as np
 
 import mlflow
+import os
+import git
 
 def metrics_lang(y, preds, lang_es):
     #Conversión en array
@@ -90,34 +92,77 @@ def safe_log_metric(name, value):
     except Exception as e:
         print(f"⚠️ No se pudo loggear {name}: {e}")
 
-def mlflow_ckeckpoint(results_val, models_dicc, X_test, y_test, experiment_name):
-    # Define el experimento (lo crea si no existe) 
-    mlflow.set_tracking_uri("sqlite:///mlflow.db")
-    mlflow.set_experiment(experiment_name)
+def mlflow_ckeckpoint(exp_info, results_val, models_dicc, extra_parms, X_test, y_test, lang_es):
+    # Set backend store
+    mlflow.set_tracking_uri(exp_info["tracking_path"])
+    tracking_uri = mlflow.get_tracking_uri()
+    print("Current tracking uri: {}".format(tracking_uri)) 
+
+    # Verificar si existe experimento, si no crearlo
+    experiment = mlflow.get_experiment_by_name(exp_info["exp_name"])
+
+    if experiment is None:
+        exp_id = mlflow.create_experiment(
+            exp_info["exp_name"],
+            artifact_location=exp_info["artifact_path"]
+        )
+        print(f"Experimento creado con ID: {exp_id}")
+    else:
+        exp_id = experiment.experiment_id
+        print(f"Experimento ya existe con ID: {exp_id}")
+
+
+    # Define el experimento (lo crea si no existe)
+    mlflow.set_experiment(exp_info["exp_name"])
+    
+    # Obtener commit actual
+    repo = git.Repo(search_parent_directories=True)
+    commit_hash = repo.head.object.hexsha
 
     for model_name, metrics in results_val.items():
         model = models_dicc[model_name]
 
         with mlflow.start_run(run_name=model_name):
-            print(f"Registrando modelo en MLflow: {model_name}")
+            print(f"📝 Registrando modelo en MLflow: {model_name}")
 
             # Hiperparámetros
             try:
                 mlflow.log_params(model.get_params())
             except:
-                print(f"No se pudieron loggear los hiperparámetros para {model_name}")
+                print(f"⚠️ No se pudieron loggear los hiperparámetros para {model_name}")
+
+            #Parámetros adicionales
+            for k, v in extra_parms.items():
+                mlflow.log_param(k, v)
 
             # Métricas de validación
             for k, v in metrics.items():
                 safe_log_metric(f"val_{k}", v)
 
             # Métricas de test
-            results_test = eval_model(model, X_test, y_test)
+            results_test = eval_model(model, X_test, y_test, lang_es)
             for k, v in results_test.items():
-                safe_log_metric(f"test_{k}", v)
+                if k.startswith("cm"):
+                    # Guardar confusion matrix (o similar) como artefacto
+                    # Guardar como CSV temporal
+                    fname = f"{k}.csv"
+                    np.savetxt(fname, v, delimiter=",", fmt="%d")
 
+                    mlflow.log_artifact(fname, artifact_path="confusion_matrices")
+
+                    # Eliminar archivo local si no lo necesitas
+                    os.remove(fname)
+
+                else:
+                    # Guardar métrica numérica
+                    safe_log_metric(f"test_{k}", v)
+            
+            #Guardar commit de git
+            mlflow.log_param("git_commit", commit_hash)
+                    
             # Guardar modelo
-            mlflow.sklearn.log_model(model, name = "model", input_example=X_test[:5])  
+            mlflow.sklearn.log_model(model, name = "model", input_example=X_test[:5])
+
 
 #Pipeline helper functions
 def get_est_params_dict(keys):
