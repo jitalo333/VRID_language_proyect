@@ -36,20 +36,43 @@ import numpy as np
 
 import mlflow
 
-def eval_model(best_model, X_test, y_test):
+def metrics_lang(y, preds, lang_es):
+    #Conversión en array
+    y = np.array(y)
+    preds = np.array(preds)
+    lang_es = np.array(lang_es)
+
+    # Seleccionar por máscara booleana
+    y_es = y[lang_es] #Data originalmente en español
+    preds_es = preds[lang_es]
+
+    y_en = y[~lang_es] #Data originalmente en inglés
+    preds_en = preds[~lang_es]
+    
+    #Computo de métricas
+    f1_es = f1_score(y_es, preds_es, average="weighted")
+    f1_en = f1_score(y_en, preds_en, average="weighted")
+    cm_es = confusion_matrix(y_es, preds_es)
+    cm_en = confusion_matrix(y_en, preds_en)
+
+    return f1_es, f1_en, cm_es, cm_en
+
+def eval_model(best_model, X_test, y_test, lang_es):
   results = {}
   preds = best_model.predict(X_test)
   cm = confusion_matrix(y_test, preds)
-  t_n, f_p, f_n, t_p = cm.ravel()
+  f1_es, f1_en, cm_es, cm_en = metrics_lang(y_test, preds, lang_es)
+  #t_n, f_p, f_n, t_p = cm()
   results = {
       'accuracy': accuracy_score(y_test, preds),
       'precision': precision_score(y_test, preds, zero_division=0),
       'recall': recall_score(y_test, preds, zero_division=0),
-      'f1_score': f1_score(y_test, preds, zero_division=0),
-      't_n': t_n,
-      'f_p': f_p,
-      'f_n': f_n,
-      't_p': t_p
+      'f1_score': f1_score(y_test, preds, zero_division=0, average="weighted"),
+      'cm': cm,
+      'f1_es': f1_es,
+      'f1_en': f1_en,
+      'cm_es': cm_es,
+      'cm_en': cm_en
   }
   return results
 
@@ -134,6 +157,16 @@ def get_est_params_dict(keys):
                 'eval_metric': Categorical(['logloss'])
             }
         },
+        'SVC': {
+            'class': SVC,
+            'params': {
+                'C': Real(1e-3, 1e3, prior='log-uniform'),          # penalización
+                'kernel': Categorical(['linear', 'rbf', 'poly']),   # tipos de kernel
+                'degree': Integer(2, 5),                            # usado solo si kernel='poly'
+                'gamma': Real(1e-4, 1e1, prior='log-uniform'),      # solo para 'rbf','poly','sigmoid'
+                'coef0': Real(0.0, 1.0),                            # usado en 'poly' y 'sigmoid'
+            }
+        }
 
     }
 
@@ -147,14 +180,14 @@ def setup_model(dicc):
     param_grid = {'model__' + param_name: param_value for param_name, param_value in dicc['params'].items()}
     return model, param_grid
 
-def run_BayesSearchCV(model, param_grid, X_train, y_train, n_iter=10, scoring='recall', sample_weight=None):
+def run_BayesSearchCV(model, param_grid, X_train, y_train, cv_function, n_iter=10, scoring='f1_weighted', sample_weight=None):
     from sklearn.exceptions import FitFailedWarning
     import warnings
 
     bayes_searchCV = BayesSearchCV(
         estimator=model,
         search_spaces=param_grid,
-        cv=5,
+        cv=5 if cv_function is None else cv_function,
         scoring=scoring,
         n_iter = n_iter,
         n_jobs=4,
@@ -209,7 +242,7 @@ def select_best_model(results_val, models_dicc):
     return best_model
 
 #Pipeline function to run the entire ML pipeline
-def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, sample_weight_On = None):
+def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, sample_weight_On = None, cv_function=None):
 
     # creacion de diccionarios para almacenamiento
     results_test = {}
@@ -228,7 +261,7 @@ def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, sample_weight_O
           sample_weight = compute_sample_weight(class_weight='balanced', y=labels)
         else:
           sample_weight = None
-        grid_search = run_BayesSearchCV(model, param_grid, data, labels, n_iter = n_iter, scoring = 'recall', sample_weight = sample_weight)
+        grid_search = run_BayesSearchCV(model, param_grid, data, labels, cv_function, n_iter = n_iter, scoring = 'f1_weighted', sample_weight = sample_weight)
 
 
         # Guardar best model
@@ -249,6 +282,7 @@ def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, sample_weight_O
 
 
     return results_val, models_dicc
+
 
 """
 # Ejemplo de uso

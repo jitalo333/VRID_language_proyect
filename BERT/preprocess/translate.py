@@ -35,7 +35,6 @@ def detect_language(texts):
             langs.append(False)
     return langs
 
-
 class translator():
     """
     Clase para traducir texto del español al inglés utilizando un modelo y tokenizer de Hugging Face.
