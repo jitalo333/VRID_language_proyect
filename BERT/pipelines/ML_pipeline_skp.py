@@ -235,7 +235,8 @@ def run_BayesSearchCV(model, param_grid, X_train, y_train, cv_function, n_iter=1
         scoring=scoring,
         n_iter = n_iter,
         n_jobs=4,
-        n_points = 2
+        n_points = 2,
+        random_state=7
     )
 
     try:
