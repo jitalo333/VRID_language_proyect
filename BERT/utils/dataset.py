@@ -9,6 +9,6 @@ def gen_dataset(codes_vrid, df):
     df['idx'] = np.arange(0, df.shape[0])
 
     #Generación de datasets
-    X = df["text_for_embedding_translated"]
-    y = df["Interdisciplinario"]
+    X = df["text_for_embedding_translated"].to_list()
+    y = df["Interdisciplinario"].to_list()
     return X, y, df
