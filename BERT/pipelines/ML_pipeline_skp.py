@@ -69,7 +69,7 @@ def eval_model(best_model, X_test, y_test, lang_es):
       'accuracy': accuracy_score(y_test, preds),
       'precision': precision_score(y_test, preds, zero_division=0),
       'recall': recall_score(y_test, preds, zero_division=0),
-      'f1_score': f1_score(y_test, preds, zero_division=0, average="weighted"),
+      'f1_macro': f1_score(y_test, preds, zero_division=0, average="macro"),
       'cm': cm,
       'f1_es': f1_es,
       'f1_en': f1_en,
@@ -317,7 +317,8 @@ def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, sample_weight_O
           sample_weight = compute_sample_weight(class_weight='balanced', y=labels)
         else:
           sample_weight = None
-        grid_search = run_BayesSearchCV(model, param_grid, data, labels, cv_function, n_iter = n_iter, scoring = 'f1_weighted', sample_weight = sample_weight)
+        grid_search = run_BayesSearchCV(model, param_grid, data, labels, cv_function, n_iter = n_iter, scoring = 'f1_macro', sample_weight = sample_weight)
+        
 
 
         # Guardar best model
