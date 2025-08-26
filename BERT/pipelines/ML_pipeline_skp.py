@@ -298,7 +298,7 @@ def select_best_model(results_val, models_dicc):
     return best_model
 
 #Pipeline function to run the entire ML pipeline
-def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, sample_weight_On = None, cv_function=None):
+def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, scoring='f1_macro', sample_weight_On = None, cv_function=None):
 
     # creacion de diccionarios para almacenamiento
     results_test = {}
@@ -317,10 +317,8 @@ def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, sample_weight_O
           sample_weight = compute_sample_weight(class_weight='balanced', y=labels)
         else:
           sample_weight = None
-        grid_search = run_BayesSearchCV(model, param_grid, data, labels, cv_function, n_iter = n_iter, scoring = 'f1_macro', sample_weight = sample_weight)
+        grid_search = run_BayesSearchCV(model, param_grid, data, labels, cv_function, n_iter = n_iter, scoring = scoring, sample_weight = sample_weight)
         
-
-
         # Guardar best model
         best_model = grid_search.best_estimator_
         models_dicc[model_name] = copy.deepcopy(best_model)
