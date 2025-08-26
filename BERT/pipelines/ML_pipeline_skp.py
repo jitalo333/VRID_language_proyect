@@ -92,25 +92,36 @@ def safe_log_metric(name, value):
     except Exception as e:
         print(f"⚠️ No se pudo loggear {name}: {e}")
 
-def mlflow_ckeckpoint(exp_info, results_val, models_dicc, extra_parms, X_test, y_test, lang_es):
-    # Set backend store
-    mlflow.set_tracking_uri(exp_info["tracking_path"])
-    tracking_uri = mlflow.get_tracking_uri()
-    print("Current tracking uri: {}".format(tracking_uri)) 
+def mlflow_ckeckpoint(exp_info, results_val, models_dicc, extra_parms, X_test, y_test, lang_es, mode="server"):
+    
+    if mode == "server":
+        # Set backend store
+        mlflow.set_tracking_uri("http://mlflow-server:5000")
+        tracking_uri = mlflow.get_tracking_uri()
+        print("Current tracking uri: {}".format(tracking_uri)) 
+    
+    elif mode == "local": 
+        # Set backend store
+        mlflow.set_tracking_uri(exp_info["tracking_path"])
+        tracking_uri = mlflow.get_tracking_uri()
+        print("Current tracking uri: {}".format(tracking_uri)) 
 
-    # Verificar si existe experimento, si no crearlo
-    experiment = mlflow.get_experiment_by_name(exp_info["exp_name"])
+        # Verificar si existe experimento, si no crearlo
+        experiment = mlflow.get_experiment_by_name(exp_info["exp_name"])
 
-    if experiment is None:
-        exp_id = mlflow.create_experiment(
-            exp_info["exp_name"],
-            artifact_location=exp_info["artifact_path"]
-        )
-        print(f"Experimento creado con ID: {exp_id}")
-    else:
-        exp_id = experiment.experiment_id
-        print(f"Experimento ya existe con ID: {exp_id}")
-
+        if experiment is None:
+            exp_id = mlflow.create_experiment(
+                exp_info["exp_name"],
+                artifact_location=exp_info["artifact_path"]
+            )
+            print(f"Experimento creado con ID: {exp_id}")
+        else:
+            exp_id = experiment.experiment_id
+            print(f"Experimento ya existe con ID: {exp_id}")
+    
+    else: 
+        print("Especificar modo de almacenamiento")
+        return 0
 
     # Define el experimento (lo crea si no existe)
     mlflow.set_experiment(exp_info["exp_name"])
