@@ -10,7 +10,7 @@ def embed_texts(texts, BASE_MODEL, ADAPTER_NAME, batch_size=32, device='cpu'):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
     model = AutoAdapterModel.from_pretrained(BASE_MODEL, trust_remote_code=True)
-    model.load_adapter(ADAPTER_NAME, source="hf", set_active=True)
+    model.load_adapter(ADAPTER_NAME, source="hf", set_active=True, load_as="classification")
     model.to(device)
     model.eval()
     print("Modelo SPECTER2 cargado correctamente.")
