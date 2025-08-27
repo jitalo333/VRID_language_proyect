@@ -75,13 +75,18 @@ def gen_TFID_dataset(codes_vrid, df):
     y = df["Interdisciplinario"]
     return X, y, df
 
-def gen_TFID_vectors(train, test):
+def gen_TFID_vectors(X_train, X_test):
+    
+    #Lemantización y eliminación de stopwords
+    X_train = preprocess_text_for_TFID(X_train)
+    X_test = preprocess_text_for_TFID(X_test)
+
     # Crear el vectorizador
     vectorizer = TfidfVectorizer()
 
     # Ajustar y transformar los documentos
-    X_train = vectorizer.fit_transform(train)
-    X_test = vectorizer.transform(test)
+    X_train = vectorizer.fit_transform(X_train)
+    X_test = vectorizer.transform(X_test)
 
     return X_train, X_test
  
