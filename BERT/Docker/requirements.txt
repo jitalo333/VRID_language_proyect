@@ -20,7 +20,8 @@ openpyxl==3.1.5
 jupyter==1.1.1
 mlflow==3.3.1
 
-
+#Optuna
+optuna==4.5.0
 
 
 #Test
