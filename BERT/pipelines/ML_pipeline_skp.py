@@ -172,8 +172,8 @@ def mlflow_ckeckpoint(exp_info, results_val, models_dicc, extra_parms, X_test, y
             mlflow.log_param("git_commit", commit_hash)
                     
             # Guardar modelo
-            mlflow.sklearn.log_model(model, name = "model", input_example=X_test[:5])
-
+            mlflow.sklearn.log_model(model, artifact_path = "model", input_example=X_test[:5])
+                   
 #Pipeline helper functions
 def get_est_params_dict(keys):
     clf_params_dict = {
