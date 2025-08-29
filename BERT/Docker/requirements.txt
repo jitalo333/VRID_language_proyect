@@ -1,0 +1,36 @@
+# Core scientific packages
+#numpy==1.22.2    #paquete instalado con pytorch
+#pandas==1.5.3  #paquete instalado con pytorch
+
+# Scikit-learn compatibility helpers
+scikit-learn==1.2.0
+scikit-optimize==0.10.2
+imbalanced-learn==0.10.1
+
+# NLP / Transformers
+transformers==4.51.3  # versión estable sin flash-attn por defecto
+adapters==1.2.0
+langid==1.1.6
+langchain==0.3.27
+sentencepiece
+nltk==3.9.1
+
+# Utils
+openpyxl==3.1.5
+jupyter==1.1.1
+mlflow==3.3.1
+
+
+
+
+#Test
+#docker start -ai test_libs
+
+#FROM nvcr.io/nvidia/pytorch:23.10-py3
+# NVIDIA-SMI 515.65.01    Driver Version: 515.65.01    CUDA Version: 11.7  
+
+#!pip install torch==2.3.1+cu118 torchvision==0.18.1+cu118 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118 
+# #!pip uninstall flash-attn -y 
+# #!pip install "numpy<2" 
+# #!pip install openpyxl 
+# #!pip install SentencePiece

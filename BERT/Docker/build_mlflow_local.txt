@@ -1,0 +1,10 @@
+docker run -d --name mlflow-server \
+  --network mlflow-net \
+  -p 5000:5000 \
+  -v /home/users/avalderrama/mlflow_data:/mlflow_data \
+  ghcr.io/mlflow/mlflow:v3.3.1 \
+  mlflow server \
+    --host 0.0.0.0 --port 5000 \
+    --backend-store-uri sqlite:////mlflow_data/mlflow.db \
+    --artifacts-destination /mlflow_data/mlruns \
+    --serve-artifacts
