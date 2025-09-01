@@ -1,6 +1,7 @@
 # Core scientific packages
 #numpy==1.22.2    #paquete instalado con pytorch
 #pandas==1.5.3  #paquete instalado con pytorch
+plotly==6.3.0
 
 # Scikit-learn compatibility helpers
 scikit-learn==1.2.0
