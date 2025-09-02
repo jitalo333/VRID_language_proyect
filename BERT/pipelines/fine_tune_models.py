@@ -53,6 +53,8 @@ def unfreeze_last_layers(model, n_unfreeze: int):
     if backbone is None:
         raise AttributeError("❌ No se encontró un backbone conocido (bert/roberta/distilbert/albert/xlm_roberta).")
 
+    print("backbone", backbone)
+    
     # Obtener capas del encoder
     if hasattr(backbone.encoder, "layer"):
         encoder_layers = backbone.encoder.layer
@@ -168,8 +170,8 @@ class Pytorch_Pipeline():
         self.params = params
 
         # Obtener los parámetros esperados por el constructor de model_class
-        signature = inspect.signature(self.model_class.__init__)
-        valid_keys = set(signature.parameters.keys()) - {'self'}
+        #signature = inspect.signature(self.model_class.__init__)
+        #valid_keys = set(signature.parameters.keys()) - {'self'}
 
         # Filtrar los params para incluir solo los esperados
         #filtered_params = {k: v for k, v in params.items() if k in valid_keys}
