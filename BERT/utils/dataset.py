@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import json
 import numpy as np
+import torch
+from torch.utils.data import Dataset
 
 def gen_dataset(codes_vrid, df):
     #Selección unicamente de elementos de df que se encuentren en codes_vrid
@@ -60,3 +62,16 @@ class CvCustom():
             test_idx = self.kfolds[i]
             train_idx = np.setdiff1d(self.all_idx, test_idx) 
             yield train_idx, test_idx
+
+class TextDataset(Dataset):
+    def __init__(self, texts, labels, tokenizer, max_len=512):
+        self.enc = tokenizer(texts, truncation=True, padding=True, max_length=max_len)
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        item = {k: torch.tensor(v[idx]) for k, v in self.enc.items()}
+        item["labels"] = torch.tensor(self.labels[idx], dtype=torch.long)
+        return item
