@@ -281,7 +281,7 @@ class optuna_objective_cv:
         # ----------- Hiperparámetros a optimizar -----------
         params={
         "lr": trial.suggest_float("lr", 1e-5, 5e-5, log=True),
-        "batch_size":12,
+        "batch_size":8,
         "n_unfreeze":trial.suggest_int("n_unfreeze", 1, 12)
         }
     
