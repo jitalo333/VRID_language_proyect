@@ -11,6 +11,8 @@ from transformers import get_scheduler
 #Optuna
 from torch.utils.data import DataLoader
 import optuna
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from utils.dataset import CvCustom, TextDataset
 #mlflow
 import mlflow
 import git
@@ -253,7 +255,7 @@ def get_metrics(y_true, y_pred, verbose = True):
   return metrics
 
 class optuna_objective_cv:
-    def __init__(self, X, y, n_classes, model_name, SMOTE_on=None, sample_weights_loss=None, Test_mode = None):
+    def __init__(self, X, y, n_classes, model_name, df_decode, SMOTE_on=None, sample_weights_loss=None, Test_mode = None):
         self.results = {}
         self.X = X
         self.y = y
@@ -262,6 +264,7 @@ class optuna_objective_cv:
         self.max_epochs = 200
         self.best_model_trial = None
         self.Test_mode = Test_mode
+        self.df_decode = df_decode
         #BERT models
         self.model_name = model_name
     
@@ -277,15 +280,15 @@ class optuna_objective_cv:
     def objective(self, trial):
         # ----------- Hiperparámetros a optimizar -----------
         params={
-        "lr": trial.suggest_float("lr", 5e-6, 5e-5, log=True),
+        "lr": trial.suggest_float("lr", 1e-5, 5e-5, log=True),
         "batch_size":12,
-        "n_unfreeze":trial.suggest_int("n_unfreeze", 1, 6)
+        "n_unfreeze":trial.suggest_int("n_unfreeze", 1, 12)
         }
     
         #------------- StratifiedKFold -------------------------------
         F1 = []
         all_metrics = []
-        cv_function=CvCustom(df_decode)
+        cv_function=CvCustom(self.df_decode)
         for fold, (train_index, test_index) in enumerate(cv_function.split(self.X)):
             #---------------Split data-------------------------------
             X_train, X_test = self.X[train_index], self.X[test_index]
