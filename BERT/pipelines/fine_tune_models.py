@@ -27,6 +27,45 @@ def get_sample_weights_loss(y):
 
   return class_weights
 
+def unfreeze_last_layers(model, n_unfreeze: int):
+    """
+    Descongela las últimas `n_unfreeze` capas de un modelo Hugging Face.
+    Compatible con BERT, RoBERTa, DistilBERT, ALBERT, XLM-R, etc.
+
+    Args:
+        model (torch.nn.Module): Modelo Hugging Face (posiblemente envuelto en DataParallel).
+        n_unfreeze (int): Número de capas a descongelar.
+
+    Returns:
+        None. Modifica el modelo en su lugar.
+    """
+
+    # Si el modelo está envuelto en DataParallel, acceder al .module
+    model_to_unfreeze = model.module if isinstance(model, torch.nn.DataParallel) else model
+
+    # Detectar backbone automáticamente
+    backbone = None
+    for attr in ["bert", "roberta", "distilbert", "albert", "xlm_roberta"]:
+        if hasattr(model_to_unfreeze, attr):
+            backbone = getattr(model_to_unfreeze, attr)
+            break
+
+    if backbone is None:
+        raise AttributeError("❌ No se encontró un backbone conocido (bert/roberta/distilbert/albert/xlm_roberta).")
+
+    # Obtener capas del encoder
+    if hasattr(backbone.encoder, "layer"):
+        encoder_layers = backbone.encoder.layer
+    elif hasattr(backbone, "transformer") and hasattr(backbone.transformer, "layer"):
+        encoder_layers = backbone.transformer.layer  # DistilBERT
+    else:
+        raise AttributeError("❌ No se encontró el atributo 'layer' en el encoder del backbone.")
+
+    # Descongelar últimas n capas
+    for layer in encoder_layers[-n_unfreeze:]:
+        for p in layer.parameters():
+            p.requires_grad = True
+
 class Pytorch_Pipeline():
     def __init__(self, model_class, sample_weights_loss=None, max_epochs = 200, use_scheduler=None):
         #Set device
@@ -144,11 +183,7 @@ class Pytorch_Pipeline():
         self.batch_size = self.params['batch_size']
 
         # Si el modelo está envuelto en DataParallel, accedemos al .module
-        model_to_unfreeze = self.model.module if isinstance(self.model, torch.nn.DataParallel) else self.model
-        if self.params.get("n_unfreeze") is not None:
-            for layer in model_to_unfreeze.bert.encoder.layer[-self.params["n_unfreeze"]:]:
-                for p in layer.parameters():
-                    p.requires_grad = True
+        unfreeze_last_layers(self.model, self.params["n_unfreeze"])
 
     def get_params(self):
         return self.params
@@ -281,7 +316,7 @@ class optuna_objective_cv:
         # ----------- Hiperparámetros a optimizar -----------
         params={
         "lr": trial.suggest_float("lr", 1e-5, 5e-5, log=True),
-        "batch_size":8,
+        "batch_size":12,
         "n_unfreeze":trial.suggest_int("n_unfreeze", 1, 12)
         }
     
