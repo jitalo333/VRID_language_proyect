@@ -8,6 +8,7 @@ import numpy as np
 import inspect
 from torch.optim import AdamW
 from transformers import get_scheduler
+import gc
 #Optuna
 from torch.utils.data import DataLoader
 import optuna
@@ -17,6 +18,7 @@ from utils.dataset import CvCustom, TextDataset
 import mlflow
 import git
 import os
+
 
 #Pytorch pipeline
 def get_sample_weights_loss(y):
@@ -386,6 +388,11 @@ class optuna_objective_cv:
 
         except ValueError:
           pass
+
+        #Vaciar memoria
+        del self.model, optimizer, train_loader
+        gc.collect()
+        torch.cuda.empty_cache()
 
         return mean_F1
     
