@@ -52,8 +52,6 @@ def unfreeze_last_layers(model, n_unfreeze: int):
 
     if backbone is None:
         raise AttributeError("❌ No se encontró un backbone conocido (bert/roberta/distilbert/albert/xlm_roberta).")
-
-    print("backbone", backbone)
     
     # Obtener capas del encoder
     if hasattr(backbone.encoder, "layer"):
