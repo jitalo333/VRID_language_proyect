@@ -317,9 +317,9 @@ class optuna_objective_cv:
     def objective(self, trial):
         # ----------- Hiperparámetros a optimizar -----------
         params={
-        "lr": trial.suggest_float("lr", 1e-5, 5e-5, log=True),
+        "lr": trial.suggest_float("lr", 1e-5, 5e-4, log=True),
         "batch_size":12,
-        "n_unfreeze":trial.suggest_int("n_unfreeze", 1, 12)
+        "n_unfreeze":trial.suggest_int("n_unfreeze", 1, 24)
         }
     
         #------------- StratifiedKFold -------------------------------
