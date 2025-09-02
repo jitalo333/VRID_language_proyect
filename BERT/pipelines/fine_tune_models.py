@@ -459,13 +459,13 @@ def mlflow_ckeckpoint(exp_info, pipeline_pytorch, extra_parms, test_loader, y_te
     commit_hash = repo.head.object.hexsha
 
     with mlflow.start_run(run_name=exp_info["run_name"]):
-        print(f"📝 Registrando modelo en MLflow: {exp_info["run_name"]}")
+        print(f"📝 Registrando modelo en MLflow: {exp_info['run_name']}")
 
         # Hiperparámetros
         try:
             mlflow.log_params(pipeline_pytorch.get_params())
         except:
-            print(f"⚠️ No se pudieron loggear los hiperparámetros para {exp_info["run_name"]}")
+            print(f"⚠️ No se pudieron loggear los hiperparámetros para {exp_info['run_name']}")
 
         #Parámetros adicionales
         for k, v in extra_parms.items():
