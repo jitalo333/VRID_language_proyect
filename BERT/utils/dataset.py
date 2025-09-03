@@ -5,6 +5,7 @@ import json
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from preprocess.translate import gen_text_for_embedding, final_clean
 
 def gen_dataset(codes_vrid, df):
     #Selección unicamente de elementos de df que se encuentren en codes_vrid
@@ -14,6 +15,22 @@ def gen_dataset(codes_vrid, df):
     df['idx'] = np.arange(0, df.shape[0])
 
     #Generación de datasets
+    X = df["text_for_embedding_translated"].to_list()
+    y = df["Interdisciplinario"].to_list()
+    return X, y, df
+
+def gen_dataset_select_cols(codes_vrid, df, cols):
+    #Selección unicamente de elementos de df que se encuentren en codes_vrid
+    df = df[df["Código VRID"].isin(codes_vrid)].copy()
+
+    #Creación de index en función de orden de los datos
+    df['idx'] = np.arange(0, df.shape[0])
+
+    #Generación de datasets
+    for col in cols:
+        df[col] = df[col].apply(final_clean)
+
+    df=gen_text_for_embedding(df, cols)
     X = df["text_for_embedding_translated"].to_list()
     y = df["Interdisciplinario"].to_list()
     return X, y, df
