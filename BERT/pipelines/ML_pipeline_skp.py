@@ -59,7 +59,7 @@ def metrics_lang(y, preds, lang_es):
 
     return f1_es, f1_en, cm_es, cm_en
 
-def eval_model(best_model, X_test, y_test, lang_es):
+def eval_model(best_model, X_test, y_test, lang_es, mode = "binary"):
   results = {}
   preds = best_model.predict(X_test)
   cm = confusion_matrix(y_test, preds)
@@ -67,8 +67,6 @@ def eval_model(best_model, X_test, y_test, lang_es):
   #t_n, f_p, f_n, t_p = cm()
   results = {
       'accuracy': accuracy_score(y_test, preds),
-      'precision': precision_score(y_test, preds, zero_division=0),
-      'recall': recall_score(y_test, preds, zero_division=0),
       'f1_macro': f1_score(y_test, preds, zero_division=0, average="macro"),
       'cm': cm,
       'f1_es': f1_es,
@@ -76,6 +74,11 @@ def eval_model(best_model, X_test, y_test, lang_es):
       'cm_es': cm_es,
       'cm_en': cm_en
   }
+  if mode == "binary":
+      results.update({
+          'precision': precision_score(y_test, preds, zero_division=0),
+            'recall': recall_score(y_test, preds, zero_division=0)
+        })
   return results
 
 #MLflow logging helper function
