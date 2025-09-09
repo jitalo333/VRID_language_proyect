@@ -95,7 +95,7 @@ def safe_log_metric(name, value):
     except Exception as e:
         print(f"⚠️ No se pudo loggear {name}: {e}")
 
-def mlflow_ckeckpoint(exp_info, results_val, models_dicc, extra_parms, X_test, y_test, lang_es, mode="server"):
+def mlflow_ckeckpoint(exp_info, results_val, models_dicc, extra_parms, X_test, y_test, lang_es, mode="server", mode_classification="binary"):
     
     if mode == "server":
         # Set backend store
@@ -154,7 +154,7 @@ def mlflow_ckeckpoint(exp_info, results_val, models_dicc, extra_parms, X_test, y
                 safe_log_metric(f"val_{k}", v)
 
             # Métricas de test
-            results_test = eval_model(model, X_test, y_test, lang_es)
+            results_test = eval_model(model, X_test, y_test, lang_es, mode = mode_classification)
             for k, v in results_test.items():
                 if k.startswith("cm"):
                     # Guardar confusion matrix (o similar) como artefacto
