@@ -51,6 +51,11 @@ def decoder_vrid(fold_codes, df_decode):
 
     return np.array(decoded)
 
+def to_serializable(obj):
+    if hasattr(obj, "tolist"):
+        return obj.tolist()
+    return obj
+
 class CvCustom():
     def __init__(self, df_decode, n_splits = None):
         #Dict codes
