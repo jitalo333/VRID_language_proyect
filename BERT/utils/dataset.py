@@ -19,7 +19,7 @@ def gen_dataset(codes_vrid, df):
     y = df["Interdisciplinario"].to_list()
     return X, y, df
 
-def gen_dataset_select_cols(codes_vrid, df, cols, element_names=None):
+def gen_dataset_select_cols(codes_vrid, df, cols, element_names=None, test_col="Interdisciplinario"):
     #Selección unicamente de elementos de df que se encuentren en codes_vrid
     df = df[df["Código VRID"].isin(codes_vrid)].copy()
 
@@ -32,7 +32,7 @@ def gen_dataset_select_cols(codes_vrid, df, cols, element_names=None):
 
     df=gen_text_for_embedding(df, cols, element_names=element_names)
     X = df["text_for_embedding_translated"].to_list()
-    y = df["Interdisciplinario"].to_list()
+    y = df[test_col].to_list()
     return X, y, df
 
 def decoder_vrid(fold_codes, df_decode):
