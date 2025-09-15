@@ -14,6 +14,8 @@ import os
 import git
 import tempfile
 import matplotlib.pyplot as plt
+import json
+
 
 
 def register_confusion_matrix(df_cm):
@@ -240,7 +242,6 @@ def mlflow_ckeckpoint(exp_info, results_val, models_dicc, X_test, y_test, df_tes
             # Guardar modelo
             mlflow.sklearn.log_model(model, artifact_path = "model", input_example=X_test[:5])
  
-
 def mlflow_ckeckpoint_generic(exp_info, preds, y_test, df_test, save_preds=None, lang_es=None, extra_parms=None, extra_artifacts = None, mode="server", mode_classification="binary"):
      
     if mode == "server":
