@@ -26,14 +26,3 @@ mlflow==3.3.1
 optuna==4.5.0
 
 
-#Test
-#docker start -ai test_libs
-
-#FROM nvcr.io/nvidia/pytorch:23.10-py3
-# NVIDIA-SMI 515.65.01    Driver Version: 515.65.01    CUDA Version: 11.7  
-
-#!pip install torch==2.3.1+cu118 torchvision==0.18.1+cu118 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/cu118 
-# #!pip uninstall flash-attn -y 
-# #!pip install "numpy<2" 
-# #!pip install openpyxl 
-# #!pip install SentencePiece
