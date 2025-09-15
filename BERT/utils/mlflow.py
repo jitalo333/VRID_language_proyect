@@ -8,6 +8,7 @@ from sklearn.metrics import (
 )
 
 import numpy as np
+import pandas as pd
 import mlflow
 import os
 import git
@@ -239,3 +240,75 @@ def mlflow_ckeckpoint(exp_info, results_val, models_dicc, X_test, y_test, df_tes
             # Guardar modelo
             mlflow.sklearn.log_model(model, artifact_path = "model", input_example=X_test[:5])
  
+
+def mlflow_ckeckpoint_generic(exp_info, preds, y_test, df_test, save_preds=None, lang_es=None, extra_parms=None, extra_artifacts = None, mode="server", mode_classification="binary"):
+     
+    if mode == "server":
+        # Set backend store
+        mlflow.set_tracking_uri("http://mlflow-server:5000")
+        tracking_uri = mlflow.get_tracking_uri()
+        print("Current tracking uri: {}".format(tracking_uri)) 
+    
+    elif mode == "local": 
+        # Set backend store
+        mlflow.set_tracking_uri(exp_info["tracking_path"])
+        tracking_uri = mlflow.get_tracking_uri()
+        print("Current tracking uri: {}".format(tracking_uri)) 
+
+        # Verificar si existe experimento, si no crearlo
+        experiment = mlflow.get_experiment_by_name(exp_info["exp_name"])
+
+        if experiment is None:
+            exp_id = mlflow.create_experiment(
+                exp_info["exp_name"],
+                artifact_location=exp_info["artifact_path"]
+            )
+            print(f"Experimento creado con ID: {exp_id}")
+        else:
+            exp_id = experiment.experiment_id
+            print(f"Experimento ya existe con ID: {exp_id}")
+    
+    else: 
+        print("Especificar modo de almacenamiento")
+        return 0
+
+    # Define el experimento (lo crea si no existe)
+    mlflow.set_experiment(exp_info["exp_name"])
+    with mlflow.start_run(run_name=extra_parms["Experiment_type"]):
+        # Obtener commit actual
+        repo = git.Repo(search_parent_directories=True)
+        commit_hash = repo.head.object.hexsha
+
+        #Artefactos adicionales, pueden ser json, csv, txt, dataframe
+        if extra_artifacts is not None:
+            for k, v in extra_artifacts.items():
+                log_artifact_generic(k, v)
+
+        #Guardar predicciones
+        if save_preds is not None:
+            df_test["y_true"]=y_test
+            df_test["preds"]=preds
+            log_artifact_generic("df_test", df_test)
+
+        #Guardar cm
+        cm = confusion_matrix(y_test, preds)
+        cm = pd.DataFrame(cm)
+        log_artifact_generic("cm", cm)
+        #Guardar imagen
+        cm_img = register_confusion_matrix(cm)
+        log_artifact_generic(f"cm_img", cm_img)
+
+       
+        #Guardar métrica numérica
+        safe_log_metric("test_f1_macro", f1_score(y_test, preds, average="macro"))
+        safe_log_metric("test_accuracy", accuracy_score(y_test, preds))
+
+        #Guardar parámetros del experimento
+        for key, value in extra_parms.items():
+            mlflow.log_param(key, value)
+        
+        #Guardar commit de git
+        mlflow.log_param("git_commit", commit_hash)
+
+    #end run
+    mlflow.end_run()
