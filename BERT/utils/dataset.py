@@ -35,6 +35,16 @@ def gen_dataset_select_cols(codes_vrid, df, cols, element_names=None, test_col="
     y = df[test_col].to_list()
     return X, y, df
 
+def gen_dataset_select_cols_all_dataset(df, cols, element_names=None):
+    #Generación de datasets
+    for col in cols:
+        df[col] = df[col].apply(final_clean)
+
+    df=gen_text_for_embedding(df, cols, element_names=element_names)
+    X = df["text_for_embedding_translated"].to_list()
+    
+    return X
+
 def decoder_vrid(fold_codes, df_decode):
     """
     Decodifica fold_codes usando df_decode.
