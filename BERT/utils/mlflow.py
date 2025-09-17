@@ -17,14 +17,29 @@ import matplotlib.pyplot as plt
 import json
 
 
+def register_confusion_matrix(df_cm, class_labels=None):
+    """
+    Genera una imagen de la matriz de confusión normalizada.
 
-def register_confusion_matrix(df_cm):
+    Parámetros:
+        df_cm (pd.DataFrame): matriz de confusión con índices y columnas como clases
+        class_labels (list, opcional): etiquetas de clase a mostrar. 
+                                       Si None, usa las del DataFrame.
+
+    Retorna:
+        PIL.Image con la matriz de confusión
+    """
     cm = df_cm.to_numpy().astype(float)
     # Normalizar por filas (cada fila suma 1)
     cm = cm / cm.sum(axis=1, keepdims=True)
+
+    # Etiquetas de clases
+    if class_labels is None:
+        class_labels = df_cm.columns.tolist()
+
     # Crear la figura
     fig, ax = plt.subplots(figsize=(6, 5))
-    im = ax.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
+    im = ax.imshow(cm, interpolation="nearest", cmap=plt.cm.Blues, vmin=0, vmax=1)
     ax.set_title("Matriz de Confusión")
     fig.colorbar(im, ax=ax)
 
@@ -34,8 +49,15 @@ def register_confusion_matrix(df_cm):
             ax.text(j, i, f"{cm[i, j]:.3f}",
                     ha="center", va="center", color="black")
 
+    # Configurar ticks con etiquetas correctas
+    ax.set_xticks(np.arange(len(class_labels)))
+    ax.set_yticks(np.arange(len(class_labels)))
+    ax.set_xticklabels(class_labels)
+    ax.set_yticklabels(class_labels)
+
     ax.set_xlabel("Predicción")
     ax.set_ylabel("Real")
+
     plt.tight_layout()
 
     # Guardar en memoria como PNG
@@ -43,10 +65,7 @@ def register_confusion_matrix(df_cm):
     fig.savefig(buf, format="png", dpi=150, bbox_inches="tight")
     buf.seek(0)
 
-    # Convertir a PIL.Image
     img = Image.open(buf)
-
-    # Importante: cerrar figura para que no se muestre ni ocupe memoria
     plt.close(fig)
 
     return img
