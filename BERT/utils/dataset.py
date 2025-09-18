@@ -7,6 +7,34 @@ import torch
 from torch.utils.data import Dataset
 from preprocess.translate import gen_text_for_embedding, final_clean
 
+def binarize_labels(y_train, y_test, positive_labels):
+    """
+    Binariza los vectores de labels según una lista de condiciones positivas.
+
+    Parámetros:
+        y_train (array-like): etiquetas de entrenamiento
+        y_test (array-like): etiquetas de prueba
+        positive_labels (list): lista de valores que deben considerarse como 1
+
+    Retorna:
+        y_train_bin, y_test_bin (arrays numpy con 0 y 1)
+    """
+
+    # Normalizar entradas a string y quitar espacios
+    y_train = np.char.strip(np.array(y_train).astype(str))
+    y_test = np.char.strip(np.array(y_test).astype(str))
+
+    # Crear condición general
+    cond_train = np.isin(y_train, positive_labels)
+    cond_test = np.isin(y_test, positive_labels)
+
+    # Aplicar binarización
+    y_train_bin = np.where(cond_train, 1, 0).astype(int)
+    y_test_bin = np.where(cond_test, 1, 0).astype(int)
+
+    return y_train_bin, y_test_bin
+
+
 def gen_dataset(codes_vrid, df):
     #Selección unicamente de elementos de df que se encuentren en codes_vrid
     df = df[df["Código VRID"].isin(codes_vrid)].copy()
