@@ -231,8 +231,9 @@ def get_est_params_dict(keys):
     # Filtrar y retornar solo los modelos solicitados
     return {key: clf_params_dict[key] for key in keys if key in clf_params_dict}
 
-def setup_model(dicc):
-    model_ = dicc['class']()
+def setup_model(dicc, proba = None):
+    if dicc['class'].__name__ == "SVC" and proba is not None:
+        model_ = dicc['class'](probability=True, **dicc['params'])
     #scaler = StandardScaler()
     model = Pipeline([('model', model_)])
     param_grid = {'model__' + param_name: param_value for param_name, param_value in dicc['params'].items()}
