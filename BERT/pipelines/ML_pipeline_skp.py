@@ -302,18 +302,16 @@ def select_best_model(results_val, models_dicc):
     return best_model
 
 #Pipeline function to run the entire ML pipeline
-def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, scoring='f1_macro', sample_weight_On = None, cv_function=None):
+def run_bayesian_pipeline(est_params_dict, data, labels, n_iter, scoring='f1_macro', sample_weight_On = None, cv_function=None, proba = None):
 
     # creacion de diccionarios para almacenamiento
-    results_test = {}
-    cm_test = {}
     results_val = {}
     models_dicc = {}
 
     for model_name, dicc in est_params_dict.items():
 
         print(model_name)
-        model, param_grid = setup_model(dicc)
+        model, param_grid = setup_model(dicc, proba = proba)
 
         #Sample weights strategy
         if sample_weight_On is not None:
