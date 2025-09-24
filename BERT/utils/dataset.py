@@ -168,11 +168,11 @@ def split_dataset(filepath, ids, labels):
         print("Error al guardar el archivo:", e)
 
 class CvCustom():
-    def __init__(self, df_decode, path, n_splits = None):
+    def __init__(self, df_decode, split_idx_path, n_splits = None):
         #Dict codes
         self.df_decode=df_decode
         #Lectura de index de separacion de conjuntos train/test
-        with open(path, "r", encoding="utf-8") as f:
+        with open(split_idx_path, "r", encoding="utf-8") as f:
             dataset_index = json.load(f)
         folds_codes = dataset_index["kfolds"]
         self.n_splits=len(folds_codes)
