@@ -6,6 +6,10 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 from preprocess.translate import gen_text_for_embedding, final_clean
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split, StratifiedKFold
+import json
 
 def binarize_labels(y_train, y_test, positive_labels):
     """
@@ -93,6 +97,75 @@ def to_serializable(obj):
     if hasattr(obj, "tolist"):
         return obj.tolist()
     return obj
+
+# Función utilizada para seleccionar columna en base a la cual se van a dividir los datos
+def get_dataset_to_split(df, feat_col, drop_duplicates_col = "Código VRID"):
+    """
+    Filtra y selecciona datos de interés desde un DataFrame.
+
+    Inputs:
+    - df (pd.DataFrame): DataFrame de entrada con varias columnas.
+    - feat_col (str): Nombre de la columna con la característica de interés.
+    - drop_duplicates_col (str, opcional): Columna usada para eliminar duplicados
+      (por defecto "Código VRID").
+
+    Outputs:
+    - pd.DataFrame: DataFrame reducido que contiene solo dos columnas:
+      [drop_duplicates_col, feat_col], sin duplicados y sin valores NaN en feat_col.
+    """
+    df = df[df[feat_col].notna()].drop_duplicates(drop_duplicates_col)
+    df = df[[drop_duplicates_col, feat_col]]
+    return df
+
+#Funcion  de división de datos
+def split_dataset(filepath, ids, labels):
+    """
+    Divide los datos en train/test, genera folds de validación y guarda índices en JSON.
+
+    Inputs:
+    - filepath (str): Ruta donde se guardará el archivo JSON con los índices.
+    - ids (array-like): Identificadores de las instancias (ej: códigos VRID).
+    - labels (array-like): Etiquetas de las instancias (categorías o clases).
+
+    Outputs:
+    - dict: Diccionario con:
+        {
+            "Test": array de IDs para el conjunto de test,
+            "kfolds": lista de arrays de IDs para cada fold de validación
+        }
+      Además, guarda este diccionario en disco en formato JSON.
+    """
+    le = LabelEncoder()
+    labels = le.fit_transform(labels)
+
+    idx_train, idx_test, y_train, y_test = train_test_split(
+        ids,
+        labels,
+        test_size=0.2,
+        random_state=7,
+        stratify=labels
+    )
+
+    skf = StratifiedKFold(n_splits=3, shuffle=True, random_state=7)
+    folds = []
+    for _, val_pos in skf.split(idx_train, y_train):
+        val_ids = idx_train[val_pos]
+        folds.append(val_ids)
+
+    print("Test size:", len(idx_test))
+    print("Fold 0 - Val size:", len(folds[0]))
+
+    dataset_index = {
+        "Test": idx_test,
+        "kfolds": folds
+    }
+
+    try:
+        with open(filepath, "w", encoding="utf-8") as f:
+            json.dump(dataset_index, f, default=to_serializable, indent=2, ensure_ascii=False)
+        print("Archivo guardado exitosamente en", filepath)
+    except Exception as e:
+        print("Error al guardar el archivo:", e)
 
 class CvCustom():
     def __init__(self, df_decode, n_splits = None):
