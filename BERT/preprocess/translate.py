@@ -238,3 +238,33 @@ def final_clean(text):
     text = text.lower()
     
     return text.strip()
+
+def translate_OCDE_features(df, col, df_translations):
+    """
+    Translate the values of a column in df using a dictionary 
+    generated from df_translations (esp, traduccion), ignoring case sensitivity.
+
+    Inputs:
+    - df (pd.DataFrame): DataFrame with the column to translate.
+    - col (str): Name of the column in df that contains the Spanish terms.
+    - df_translations (pd.DataFrame): DataFrame with columns ["esp", "traduccion"].
+
+    Output:
+    - pd.Series: Column translated into English (keeps original if no translation is found).
+    - dict: Dictionary used for translation (with lowercased keys).
+    """
+    # Crear un diccionario {español: inglés}, asegurando strings y saltando NaN
+    dictionary = {
+    " ".join(str(k).split()): v
+    for k, v in zip(df_translations["esp"], df_translations["traduccion"])
+    if pd.notna(k) and pd.notna(v)
+    }
+    #Aplicar limpieza a columna que se va a traducir
+    df[col] = df[col].map(final_clean)
+    # Convertir a string, minúsculas y mapear traducciones
+    translated = df[col].astype(str).str.lower().map(dictionary)
+
+    # Donde no hay traducción, devolver el valor original
+    translated = translated.fillna(df[col])
+
+    return translated
