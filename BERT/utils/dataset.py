@@ -38,7 +38,6 @@ def binarize_labels(y_train, y_test, positive_labels):
 
     return y_train_bin, y_test_bin
 
-
 def gen_dataset(codes_vrid, df):
     #Selección unicamente de elementos de df que se encuentren en codes_vrid
     df = df[df["Código VRID"].isin(codes_vrid)].copy()
