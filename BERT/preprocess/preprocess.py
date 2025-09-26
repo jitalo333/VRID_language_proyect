@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import unicodedata
+import numpy as np
 
 
 def get_expressions_to_delete():
@@ -231,3 +232,23 @@ def expand_acronyms(text):
         text = acronym_pattern.sub(lambda m: acronyms[m.group(0)], text)
 
     return text
+
+
+
+def one_hot_codification(df, col_name, class_names):
+    """
+    Codifica en one-hot una columna categórica y agrega columnas binarias (0/1).
+
+    Inputs:
+    - df (pd.DataFrame): DataFrame con los datos.
+    - col_name (str): Nombre de la columna categórica a codificar.
+    - class_names (list): Lista de clases a transformar en columnas.
+
+    Output:
+    - df (pd.DataFrame): DataFrame con columnas nuevas (una por clase en class_names).
+    """
+    for name in class_names: 
+        labels = np.isin(df[col_name], name)
+        labels = np.where(labels, 1, 0).astype(int)
+        df[str(name)] = labels
+    return df
