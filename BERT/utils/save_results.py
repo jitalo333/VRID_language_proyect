@@ -11,7 +11,7 @@ import pickle
 import joblib
 import numpy as np
 import os
-import pandas as pds
+import pandas as pd
 
 def metrics_lang(y, preds, lang_es):
     #Conversión en array
