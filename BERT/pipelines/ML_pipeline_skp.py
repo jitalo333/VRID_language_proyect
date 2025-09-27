@@ -233,10 +233,10 @@ def get_est_params_dict(keys):
 
 def setup_model(dicc, proba = None):
     if dicc['class'].__name__ == "SVC" and proba is not None:
-        model_ = dicc['class'](probability=True, **dicc['params'])
+        model = dicc['class'](probability=True, **dicc['params'])
     else:
-        model_ = dicc['class']() 
-    model = Pipeline([('model', model_)])
+        model = dicc['class']() 
+
     param_grid = {'model__' + param_name: param_value for param_name, param_value in dicc['params'].items()}
     return model, param_grid
 
