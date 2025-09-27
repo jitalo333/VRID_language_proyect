@@ -124,7 +124,38 @@ def model_to_pipeline(vectorizer, models_dicc):
 
     return models_dicc_pipeline
 
-def save_models_and_metrics(path, results_val, models_dicc, df_test, y_test, results_test, preds, save_preds=None, mode_classification="binary"):
+def get_best_model_name(results_test, metric):
+    """
+    Retorna el nombre del modelo con mejor mean_test_score en results_val.
+    """
+    best_result = float("-inf")  # para que funcione incluso si hay scores negativos
+    best_model_name = None
+
+    for name, metrics in results_test.items():
+        if metrics[metric] > best_result:
+            best_result = metrics[metric]
+            best_model_name = name
+
+    if best_model_name is None:
+        raise ValueError("results_test está vacío o no contiene f{metric}.")
+
+    return best_model_name
+
+def save_txt(path, name):
+    """
+    Guarda el nombre del modelo en un archivo de texto.
+    """
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(name)
+
+def read_txt(path):
+    """
+    Lee y devuelve el contenido de un archivo de texto (sin saltos de línea).
+    """
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read().strip()
+
+def save_models_and_metrics(path, results_val, models_dicc, df_test, y_test, results_test, preds_test, save_preds=None, mode_classification="binary"):
     
     # Obtener commit actual
     repo = git.Repo(search_parent_directories=True)
@@ -164,14 +195,14 @@ def save_models_and_metrics(path, results_val, models_dicc, df_test, y_test, res
         #Guardar predicciones
         if save_preds is not None:
             df_test["y_true"]=y_test
-            df_test["preds"]=preds
+            df_test["preds"]=preds_test[model_name]
             df_test = df_test[["Código VRID", "y_true", "preds"]]
             #Save as csv
             save_path = os.path.join(path_metrics, f"preds_{model_name}.csv")
             df_test.to_csv(save_path, index=False, encoding="utf-8-sig")
 
         # Guardar métricas de test
-        for k, v in results_test.items():
+        for k, v in results_test[model_name].items():
             if k.startswith("cm"):
                 # Guardar confusion matrix (o similar) como artefacto
                 # Guardar como CSV temporal
@@ -195,7 +226,18 @@ def save_models_and_metrics(path, results_val, models_dicc, df_test, y_test, res
         # Guardar en JSON
         with open(save_path, "w", encoding="utf-8") as f:
             json.dump(save_dict, f, indent=4, ensure_ascii=False)
+        
+    # Guardar nombre del mejor modelo
+    best_model_name = get_best_model_name(results_test, "f1_macro")
+    savepath = os.path.join(path_models, "best_model_name.txt")
+    save_txt(savepath, best_model_name)
 
-def load_model(path):
-    inference_model = joblib.load(path)
+def load_model(path, mode = "best"):
+    if mode == "best":
+        name = read_txt(os.path.join(path, "best_model_name.txt"))
+        print("Mejor modelo:", name)
+        inference_model = joblib.load(os.path.join(path, f"{name}.joblib"))
+    if mode == "specific":
+        inference_model = joblib.load(path)
+
     return inference_model
