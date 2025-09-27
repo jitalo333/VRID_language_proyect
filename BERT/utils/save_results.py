@@ -114,7 +114,7 @@ def register_confusion_matrix(df_cm, class_labels=None):
 
     return img
 
-def save_models_and_metrics(path, results_val, models_dicc, X_test, y_test, df_test, save_preds=None, lang_es=None, mode_classification="binary"):
+def save_models_and_metrics(path, results_val, models_dicc, df_test, results_test, preds, save_preds=None, mode_classification="binary"):
     
     # Obtener commit actual
     repo = git.Repo(search_parent_directories=True)
@@ -150,8 +150,7 @@ def save_models_and_metrics(path, results_val, models_dicc, X_test, y_test, df_t
             save_dict[f"val_{k}"] = v
 
         #Predicciones y resultados de test
-        results_test, preds = eval_model(model, X_test, y_test, lang_es, mode = mode_classification)
-
+        
         #Guardar predicciones
         if save_preds is not None:
             df_test["y_true"]=y_test
