@@ -231,22 +231,35 @@ def get_est_params_dict(keys):
     # Filtrar y retornar solo los modelos solicitados
     return {key: clf_params_dict[key] for key in keys if key in clf_params_dict}
 
-def setup_model(dicc, proba = None):
-    if dicc['class'].__name__ == "SVC" and proba is not None:
-        model = dicc['class'](probability=True, **dicc['params'])
-    else:
-        model = dicc['class']() 
+def setup_model(dicc, proba=None, use_pipeline=False):
+    """
+    Configura un modelo sklearn y su param_grid.
 
-    param_grid = {'model__' + param_name: param_value for param_name, param_value in dicc['params'].items()}
+    dicc: dict con {'class': Estimador, 'params': {...}}
+    proba: activa probability=True si el modelo es SVC
+    use_pipeline: si True, devuelve un Pipeline con paso 'model'
+    """
+    # Crear modelo
+    if dicc['class'].__name__ == "SVC" and proba is not None:
+        model_ = dicc['class'](probability=True, **dicc['params'])
+    else:
+        model_ = dicc['class'](**dicc['params'])
+
+    if use_pipeline:
+        from sklearn.pipeline import Pipeline
+        model = Pipeline([("model", model_)])
+        # Grid con prefijo "model__"
+        param_grid = {
+            "model__" + k: v for k, v in dicc['params'].items()
+        }
+    else:
+        model = model_
+        # Grid con nombre real de los parámetros
+        param_grid = dicc['params']
+
     return model, param_grid
 
-"""
-def setup_model(dicc, proba = None): 
-	model_ = dicc['class']() 
-	model = Pipeline([('model', model_)]) 
-	param_grid = {'model__' + param_name: param_value for param_name, param_value in dicc['params'].items()} 
-	return model, param_grid
-"""
+
 def run_BayesSearchCV(model, param_grid, X_train, y_train, cv_function, n_iter=10, scoring='f1_weighted', sample_weight=None):
     from sklearn.exceptions import FitFailedWarning
     import warnings
