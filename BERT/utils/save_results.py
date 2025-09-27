@@ -12,6 +12,8 @@ import joblib
 import numpy as np
 import os
 import pandas as pd
+from sklearn.pipeline import Pipeline
+
 
 def metrics_lang(y, preds, lang_es):
     #Conversión en array
@@ -113,6 +115,14 @@ def register_confusion_matrix(df_cm, class_labels=None):
     plt.close(fig)
 
     return img
+
+def model_to_pipeline(vectorizer, models_dicc):
+    models_dicc_pipeline = {}
+    for name, model in models_dicc.items():
+        pip = Pipeline([("TF-IDF", vectorizer), ("model", model)])
+        models_dicc_pipeline[name] = pip
+
+    return models_dicc_pipeline
 
 def save_models_and_metrics(path, results_val, models_dicc, df_test, y_test, results_test, preds, save_preds=None, mode_classification="binary"):
     
