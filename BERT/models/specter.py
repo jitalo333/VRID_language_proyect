@@ -5,6 +5,7 @@ from sklearn.preprocessing import LabelEncoder
 from transformers import AutoTokenizer
 from adapters import AutoAdapterModel
 
+
 def embed_texts(texts, BASE_MODEL, ADAPTER_NAME, batch_size=32, device='cpu'):
     #Parameters
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -28,3 +29,16 @@ def embed_texts(texts, BASE_MODEL, ADAPTER_NAME, batch_size=32, device='cpu'):
         embs = torch.nn.functional.normalize(embs, p=2, dim=1)
         embeddings.append(embs.cpu().numpy())
     return np.vstack(embeddings)
+
+
+
+class BERT_vectorizer:
+    def __init__(self, BASE_MODEL, ADAPTER_NAME):
+        # Inicializa con el modelo base y el adapter a usar
+        self.BASE_MODEL = BASE_MODEL
+        self.ADAPTER_NAME = ADAPTER_NAME
+
+    def transform(self, X):
+        # Genera embeddings para los textos usando embed_texts, 
+        # compatible con Pipeline de sklearn
+        return embed_texts(X, self.BASE_MODEL, self.ADAPTER_NAME)
