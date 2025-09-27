@@ -260,7 +260,9 @@ def setup_model(dicc, proba=None, use_pipeline=False):
     return model, param_grid
 
 
-def run_BayesSearchCV(model, param_grid, X_train, y_train, cv_function, n_iter=10, scoring='f1_weighted', sample_weight=None):
+def run_BayesSearchCV(model, param_grid, X_train, y_train, cv_function,
+                      n_iter=10, scoring='f1_weighted', sample_weight=None):
+    from sklearn.pipeline import Pipeline
     from sklearn.exceptions import FitFailedWarning
     import warnings
 
@@ -269,20 +271,31 @@ def run_BayesSearchCV(model, param_grid, X_train, y_train, cv_function, n_iter=1
         search_spaces=param_grid,
         cv=5 if cv_function is None else cv_function,
         scoring=scoring,
-        n_iter = n_iter,
+        n_iter=n_iter,
         n_jobs=4,
-        n_points = 2,
+        n_points=2,
         random_state=7
     )
 
+    # Construir fit_params según sea pipeline o estimador directo
+    if sample_weight is not None:
+        if isinstance(model, Pipeline):
+            fit_params = {"model__sample_weight": sample_weight}
+        else:
+            fit_params = {"sample_weight": sample_weight}
+    else:
+        fit_params = {}
+
     try:
-        fit_params = {'model__sample_weight': sample_weight} if sample_weight is not None else {}
         bayes_searchCV.fit(X_train, y_train, **fit_params)
-    except TypeError as e:
-        print(f"⚠️ Modelo {model.named_steps['model'].__class__.__name__} no acepta sample_weight. Reintentando sin él.")
+    except TypeError:
+        model_name = (model.named_steps["model"].__class__.__name__ 
+                      if isinstance(model, Pipeline) else model.__class__.__name__)
+        print(f"⚠️ Modelo {model_name} no acepta sample_weight. Reintentando sin él.")
         bayes_searchCV.fit(X_train, y_train)
 
     return bayes_searchCV
+
 
 def calculate_metrics(y_true, y_pred, y_proba=None):
     metrics = {
