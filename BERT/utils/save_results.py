@@ -114,7 +114,7 @@ def register_confusion_matrix(df_cm, class_labels=None):
 
     return img
 
-def save_models_and_metrics(path, results_val, models_dicc, df_test, results_test, preds, save_preds=None, mode_classification="binary"):
+def save_models_and_metrics(path, results_val, models_dicc, df_test, y_test, results_test, preds, save_preds=None, mode_classification="binary"):
     
     # Obtener commit actual
     repo = git.Repo(search_parent_directories=True)
