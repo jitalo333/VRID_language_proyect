@@ -60,7 +60,7 @@ class subarea_hierarchical_classifier:
         #Cálculo de similaridad entre textos y subcategorías OCDE
         similarity_matrix = self.compute_similarity(embedding, self.emb_ocde)
         #Número de subclaves por area OCDE
-        num_subkeys = self.compute_num_subkeys(ocde_hierarchy, self.ocde_area)
+        num_subkeys = self.compute_num_subkeys(self.ocde_hierarchy, self.ocde_area)
         #Se expande la matriz de predicciones de modelos de ML utilizando cantidad de claves por modelo
         prob_expanded = np.repeat(prob, num_subkeys, axis=1)
     
