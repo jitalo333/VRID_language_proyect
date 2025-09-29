@@ -24,7 +24,8 @@ class subarea_hierarchical_classifier:
         self.BASE_MODEL = BASE_MODEL
         self.ADAPTER_NAME = ADAPTER_NAME
         #Generate ocde texts
-        self.ocde_keys, ocde_texts = build_ocde_texts(ocde_hierarchy)
+        self.ocde_hierarchy = ocde_hierarchy
+        self.ocde_keys, ocde_texts = build_ocde_texts(self.ocde_hierarchy)
         #Generate embeddings 
         self.emb_ocde = embed_texts(ocde_texts, self.BASE_MODEL, self.ADAPTER_NAME)
         #Generar areas OCDE
