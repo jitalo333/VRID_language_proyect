@@ -292,7 +292,7 @@ def get_metrics(y_true, y_pred, verbose = True):
   return metrics
 
 class optuna_objective_cv:
-    def __init__(self, X, y, n_classes, model_name, df_decode, SMOTE_on=None, sample_weights_loss=None, Test_mode = None):
+    def __init__(self, X, y, n_classes, model_name, cv_function, sample_weights_loss=None, Test_mode = None):
         self.results = {}
         self.X = X
         self.y = y
@@ -301,7 +301,8 @@ class optuna_objective_cv:
         self.max_epochs = 200
         self.best_model_trial = None
         self.Test_mode = Test_mode
-        self.df_decode = df_decode
+        #Cross validation
+        self.cv_function = cv_function
         #BERT models
         self.model_name = model_name
     
@@ -325,8 +326,7 @@ class optuna_objective_cv:
         #------------- StratifiedKFold -------------------------------
         F1 = []
         all_metrics = []
-        cv_function=CvCustom(self.df_decode)
-        for fold, (train_index, test_index) in enumerate(cv_function.split(self.X)):
+        for fold, (train_index, test_index) in enumerate(self.cv_function.split(self.X)):
             #---------------Split data-------------------------------
             X_train, X_test = self.X[train_index], self.X[test_index]
             y_train, y_test = self.y[train_index], self.y[test_index]
